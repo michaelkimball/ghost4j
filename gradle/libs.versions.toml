@@ -1,0 +1,23 @@
+[versions]
+itext = "9.6.0"
+jna = "5.18.1"
+slf4j = "2.0.17"
+commons-beanutils = "1.11.0"
+xmlgraphics-commons = "2.11"
+junit-jupiter = "6.0.3"
+spotless = "8.4.0"
+google-java-format = "1.27.0"
+
+[libraries]
+jna = { group = "net.java.dev.jna", name = "jna", version.ref = "jna" }
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+commons-beanutils = { group = "commons-beanutils", name = "commons-beanutils", version.ref = "commons-beanutils" }
+xmlgraphics-commons = { group = "org.apache.xmlgraphics", name = "xmlgraphics-commons", version.ref = "xmlgraphics-commons" }
+itext-kernel = { group = "com.itextpdf", name = "kernel", version.ref = "itext" }
+itext-layout = { group = "com.itextpdf", name = "layout", version.ref = "itext" }
+itext-io = { group = "com.itextpdf", name = "io", version.ref = "itext" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit-jupiter" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-jupiter" }
+
+[plugins]
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
