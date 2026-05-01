@@ -15,7 +15,6 @@ import com.sun.jna.PointerType;
 import com.sun.jna.Structure;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
-import com.sun.jna.win32.StdCallLibrary.StdCallCallback;
 import java.util.Arrays;
 import java.util.List;
 
@@ -60,7 +59,7 @@ public interface GhostscriptLibrary extends Library {
          */
         public NativeLong revisiondate;
 
-        protected List<?> getFieldOrder() {
+        protected List<String> getFieldOrder() {
             return Arrays.asList("product", "copyright", "revision", "revisiondate");
         }
     }
@@ -234,7 +233,7 @@ public interface GhostscriptLibrary extends Library {
          */
         public display_separation display_separation;
 
-        protected List<?> getFieldOrder() {
+        protected List<String> getFieldOrder() {
             return Arrays.asList("size", "version_major", "version_minor", "display_open", "display_preclose", "display_close", "display_presize", "display_size", "display_sync", "display_page", "display_update", "display_memalloc", "display_memfree", "display_separation");
         }
     }
@@ -262,7 +261,7 @@ public interface GhostscriptLibrary extends Library {
      * Callback called to provide a custom input to Ghostscript. buf is a
      * pointer to a char array. len is the length of the char array.
      */
-    public interface stdin_fn extends StdCallCallback {
+    public interface stdin_fn extends Callback {
 
         public int callback(Pointer caller_handle, Pointer buf, int len);
     }
@@ -272,7 +271,7 @@ public interface GhostscriptLibrary extends Library {
      * output is not the resulting file, but the output of the Postscript
      * interpreter. str holds output characters. len is the length for str.
      */
-    public interface stdout_fn extends StdCallCallback {
+    public interface stdout_fn extends Callback {
 
         public int callback(Pointer caller_handle, String str, int len);
     }
@@ -281,7 +280,7 @@ public interface GhostscriptLibrary extends Library {
      * Callback called to provide a custom error output to Ghostscript. str
      * holds output characters. len is the length for str.
      */
-    public interface stderr_fn extends StdCallCallback {
+    public interface stderr_fn extends Callback {
 
         public int callback(Pointer caller_handle, String str, int len);
     }

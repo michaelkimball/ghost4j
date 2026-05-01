@@ -246,9 +246,8 @@ public class JavaFork implements Runnable {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-    } else {
-    	throw new RuntimeException("Found unknown ClassLoader type, cannot scan classes: " + classLoader.getClass().getName());
     }
+    // else: unknown classloader — leave cpBuilder empty so the java.class.path fallback below is used
 
 	String cp = cpBuilder.toString();
 

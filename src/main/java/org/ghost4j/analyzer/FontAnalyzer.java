@@ -75,11 +75,11 @@ public class FontAnalyzer extends AbstractRemoteAnalyzer {
 
 	// prepare args
 	String[] gsArgs = {
-		"-fonta",
 		"-dQUIET",
 		"-dNOPAUSE",
 		"-dBATCH",
 		"-dNODISPLAY",
+		"-dNOSAFER",
 		"-sFile="
 			+ diskStore.getFile(inputDiskStoreKey)
 				.getAbsolutePath(), "-sOutputFile=%stdout",

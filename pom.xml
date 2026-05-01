@@ -3,27 +3,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.ghost4j</groupId>
+    <groupId>io.github.michaelkimball</groupId>
     <artifactId>ghost4j</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.5</version>
+    <version>1.1.0</version>
 
     <name>Ghost4J</name>
     <description>Java wrapper for Ghostscript API. Official ${project.name} build of the
         ${project.version} release
     </description>
-    <url>http://www.ghost4j.org</url>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <licenses>
         <license>
@@ -32,31 +20,23 @@
         </license>
     </licenses>
 
-    <scm>
-        <connection>scm:git:https://github.com/zippy1978/ghost4j.git</connection>
-        <developerConnection>scm:git:https://github.com/zippy1978/ghost4j.git</developerConnection>
-        <url>http://www.github.com/zippy1978/ghost4j</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <issueManagement>
-        <system>GitHub</system>
-        <url>https://github.com/zippy1978/ghost4j/issues</url>
-    </issueManagement>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <developers>
         <developer>
-            <name>Gilles Grousset</name>
-            <email>gi.grousset@gmail.com</email>
-            <url>http://zippy1978.tumblr.com</url>
+            <name>Michael Kimball</name>
+            <email>me@michaelkimball.dev</email>
         </developer>
     </developers>
 
     <contributors>
+        <contributor>
+            <name>Gilles Grousset</name>
+            <email>gi.grousset@gmail.com</email>
+            <url>http://zippy1978.tumblr.com</url>
+        </contributor>
         <contributor>
             <name>Dave Smith</name>
             <email>dave.smith@candata.com</email>
@@ -97,7 +77,7 @@
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
-            <version>4.1.0</version>
+            <version>5.13.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -186,11 +166,21 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <!-- Enable native access for JNA callbacks on Java 17+ -->
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.0</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
 
@@ -233,91 +223,6 @@
                         <descriptor>src/main/assembly/dist.xml</descriptor>
                     </descriptors>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>com.github.github</groupId>
-                <artifactId>site-maven-plugin</artifactId>
-                <version>0.12</version>
-                <configuration>
-                    <message>Official ${project.name} build</message>
-                    <server>github.com</server>
-                    <repositoryName>${project.artifactId}</repositoryName>
-                    <repositoryOwner>zippy1978</repositoryOwner>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>site</goal>
-                        </goals>
-                        <phase>site</phase>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-                <version>3.0</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.anasoft.os</groupId>
-                        <artifactId>m2st-doxia-macros</artifactId>
-                        <version>2.0</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-module-markdown</artifactId>
-                        <version>1.7</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <inputEncoding>UTF-8</inputEncoding>
-                    <outputEncoding>UTF-8</outputEncoding>
-                    <reportPlugins>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-project-info-reports-plugin</artifactId>
-                            <version>2.5</version>
-                            <reportSets>
-                                <reportSet>
-                                    <reports>
-                                        <report>dependencies</report>
-                                        <report>project-team</report>
-                                        <report>issue-tracking</report>
-                                        <report>license</report>
-                                        <report>scm</report>
-                                    </reports>
-                                </reportSet>
-                            </reportSets>
-                        </plugin>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-javadoc-plugin</artifactId>
-                            <version>2.7</version>
-                        </plugin>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-surefire-report-plugin</artifactId>
-                            <version>2.6</version>
-                        </plugin>
-                    </reportPlugins>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.6</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
         </plugins>

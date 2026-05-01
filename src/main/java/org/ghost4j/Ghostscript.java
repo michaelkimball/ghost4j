@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import org.ghost4j.display.DisplayCallback;
 import org.ghost4j.display.DisplayData;
 
+import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import org.slf4j.event.Level;
@@ -62,6 +63,24 @@ public class Ghostscript {
      * Holds the native display callback.
      */
     private static GhostscriptLibrary.display_callback_s nativeDisplayCallback;
+    /**
+     * Tracks whether gsapi_init_with_args succeeded and gsapi_exit has not yet
+     * been called. Used to ensure gsapi_exit is always called before
+     * gsapi_delete_instance (required by the GS API contract).
+     */
+    private static boolean initialized = false;
+    /**
+     * Holds JNA stdin callback to prevent garbage collection while GS is active.
+     */
+    private static GhostscriptLibrary.stdin_fn nativeStdinCallback;
+    /**
+     * Holds JNA stdout callback to prevent garbage collection while GS is active.
+     */
+    private static GhostscriptLibrary.stdout_fn nativeStdoutCallback;
+    /**
+     * Holds JNA stderr callback to prevent garbage collection while GS is active.
+     */
+    private static GhostscriptLibrary.stderr_fn nativeStderrCallback;
 
     /**
      * Singleton access method.
@@ -298,7 +317,7 @@ public class Ghostscript {
 	    }
 	};
 
-	// stderr callback, if no stdout explicitly defined, use a
+	// stderr callback, if no stderr explicitly defined, use a
 	// GhostscriptLoggerOutputStream to log messages
 	GhostscriptLibrary.stderr_fn stderrCallback = null;
 	if (getStdErr() == null) {
@@ -318,6 +337,21 @@ public class Ghostscript {
 		return len;
 	    }
 	};
+
+	// Keep callback objects in static fields to prevent GC while GS is
+	// active (JNA 5.x uses WeakHashMap for callback references)
+	nativeStdinCallback = stdinCallback;
+	nativeStdoutCallback = stdoutCallback;
+	nativeStderrCallback = stderrCallback;
+
+	// GS 9.x requires gsapi_set_arg_encoding before any other setup calls
+	result = GhostscriptLibrary.instance.gsapi_set_arg_encoding(
+		getNativeInstanceByRef().getValue(), GhostscriptLibrary.GS_ARG_ENCODING_UTF8);
+	if (result != 0) {
+	    throw new GhostscriptException(
+		    "Cannot set arg encoding on Ghostscript interpreter. Error code is "
+			    + result);
+	}
 
 	// io setting
 	result = GhostscriptLibrary.instance.gsapi_set_stdio(
@@ -345,20 +379,44 @@ public class Ghostscript {
 	    }
 	}
 
-	// init
-        result = GhostscriptLibrary.instance.gsapi_set_arg_encoding(getNativeInstanceByRef().getValue(), GhostscriptLibrary.GS_ARG_ENCODING_UTF8);
-	if (args != null) {
+	// init — when no args provided, initialize in headless mode to avoid
+	// requiring a display device (GS 9.x fatal errors without one in
+	// headless environments)
+	if (args != null && args.length > 0) {
+	    // GS C API convention: argv[0] is the program name and is skipped
+	    // for option processing. Prepend "gs" so all user-supplied args are
+	    // correctly treated as interpreter options.
+	    String[] argsWithProgram = new String[args.length + 1];
+	    argsWithProgram[0] = "gs";
+	    System.arraycopy(args, 0, argsWithProgram, 1, args.length);
 	    result = GhostscriptLibrary.instance.gsapi_init_with_args(
-		    getNativeInstanceByRef().getValue(), args.length, args);
+		    getNativeInstanceByRef().getValue(), argsWithProgram.length, argsWithProgram);
 	} else {
+	    String[] headlessArgs = { "gs", "-dNODISPLAY", "-dNOPAUSE", "-dBATCH" };
 	    result = GhostscriptLibrary.instance.gsapi_init_with_args(
-		    getNativeInstanceByRef().getValue(), 0, null);
+		    getNativeInstanceByRef().getValue(), headlessArgs.length, headlessArgs);
 	}
 
-	// interpreter exited: this is not an error
+	// -101 (gs_error_Quit) from -dBATCH is normal: GS's `start` procedure
+	// calls `null 0 .quit` to end the interactive session after processing
+	// all command-line files. The interpreter instance is still alive and
+	// can service subsequent gsapi_run_file / gsapi_run_string calls.
+	// DO NOT call exit() here — that would destroy the interpreter.
 	if (result == -101) {
-	    exit();
 	    result = 0;
+	}
+
+	// fatal error: must call gsapi_exit before gsapi_delete_instance
+	// per GS API contract; skip if we already exited above
+	if (result <= -100) {
+	    try {
+		GhostscriptLibrary.instance.gsapi_exit(getNativeInstanceByRef().getValue());
+	    } catch (Exception ignored) {
+		// best-effort cleanup
+	    }
+	    throw new GhostscriptException(
+		    "Cannot initialize Ghostscript interpreter. Error code is "
+			    + result);
 	}
 
 	// test result
@@ -367,6 +425,10 @@ public class Ghostscript {
 		    "Cannot initialize Ghostscript interpreter. Error code is "
 			    + result);
 	}
+
+	// Mark interpreter as initialized so deleteInstance() knows to call
+	// gsapi_exit() before gsapi_delete_instance() if exit() is not called.
+	initialized = true;
     }
 
     /**
@@ -532,7 +594,7 @@ public class Ghostscript {
 	switch (nativeDisplayCallback.version_major) {
 	case 1:
 	    nativeDisplayCallback.size = nativeDisplayCallback.size()
-		    - Pointer.SIZE;
+		    - Native.POINTER_SIZE;
 	    break;
 	default:
 	    nativeDisplayCallback.size = nativeDisplayCallback.size();
@@ -551,7 +613,8 @@ public class Ghostscript {
      */
     public void exit() throws GhostscriptException {
 
-	if (nativeInstanceByRef != null) {
+	if (nativeInstanceByRef != null && initialized) {
+	    initialized = false;
 	    int result = GhostscriptLibrary.instance
 		    .gsapi_exit(getNativeInstanceByRef().getValue());
 
@@ -626,10 +689,26 @@ public class Ghostscript {
 
 	IntByReference exitCode = new IntByReference();
 
-	GhostscriptLibrary.instance.gsapi_run_file(getNativeInstanceByRef()
-		.getValue(), fileName, 0, exitCode);
+	// user_errors=0: let the PS machinery handle errors. On any PS error,
+	// execute0's stopped catches it and calls '1 .quit', which makes
+	// gsapi_run_file return gs_error_Fatal (-100) with pexit_code=1.
+	// Normal completion returns 0; explicit quit returns gs_error_Quit (-101).
+	int result = GhostscriptLibrary.instance.gsapi_run_file(
+		getNativeInstanceByRef().getValue(), fileName, 0, exitCode);
 
-	// test exit code
+	// e_Quit (-101) with exit code 0 is a normal exit, not an error
+	if (result == -101) {
+	    return;
+	}
+
+	// Any other negative result is an error; use pexit_code to distinguish
+	// PS errors (pexit_code != 0) from fatal interpreter errors.
+	if (result < 0 && result != -100) {
+	    throw new GhostscriptException(
+		    "Cannot run file on Ghostscript interpreter. Error code "
+			    + result);
+	}
+
 	if (exitCode.getValue() != 0) {
 	    throw new GhostscriptException(
 		    "Cannot run file on Ghostscript interpreter. Error code "
@@ -656,9 +735,24 @@ public class Ghostscript {
 
 	// delete native interpeter instance
 	if (nativeInstanceByRef != null) {
+	    // GS API requires gsapi_exit before gsapi_delete_instance when the
+	    // interpreter was initialized. Guard against callers who skipped exit().
+	    if (initialized) {
+		try {
+		    GhostscriptLibrary.instance.gsapi_exit(nativeInstanceByRef.getValue());
+		} catch (Exception ignored) {
+		    // best-effort: proceed to delete regardless
+		}
+		initialized = false;
+	    }
 	    GhostscriptLibrary.instance
 		    .gsapi_delete_instance(nativeInstanceByRef.getValue());
 	    nativeInstanceByRef = null;
 	}
+
+	// release callback references
+	nativeStdinCallback = null;
+	nativeStdoutCallback = null;
+	nativeStderrCallback = null;
     }
 }
