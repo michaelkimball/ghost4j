@@ -11,7 +11,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.ghost4j.document.PDFDocument;
 import org.ghost4j.document.PSDocument;
@@ -22,22 +25,17 @@ import org.ghost4j.document.PSDocument;
  * @author Gilles Grousset (gi.grousset@gmail.com)
  * 
  */
-public class SimpleRendererTest extends TestCase {
+public class SimpleRendererTest {
 
-    public SimpleRendererTest(String testName) {
-	super(testName);
-    }
-
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-	super.setUp();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
+    @Test
     public void testRenderWithPDF() throws Exception {
 
 	PDFDocument document = new PDFDocument();
@@ -49,6 +47,7 @@ public class SimpleRendererTest extends TestCase {
 	assertEquals(1, result.size());
     }
 
+    @Test
     public void testRenderWithPS() throws Exception {
 
 	PSDocument document = new PSDocument();
@@ -60,6 +59,7 @@ public class SimpleRendererTest extends TestCase {
 	assertEquals(1, result.size());
     }
 
+    @Test
     public void testRenderWithPSMultiProcess() throws Exception {
 
 	final PSDocument document = new PSDocument();

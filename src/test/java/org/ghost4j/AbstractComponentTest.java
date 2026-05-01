@@ -7,31 +7,28 @@
 
 package org.ghost4j;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AbstractComponent tests.
  * 
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
-public class AbstractComponentTest extends TestCase {
+public class AbstractComponentTest {
 
-    public AbstractComponentTest(String testName) {
-	super(testName);
-
-    }
-
-    @Override
+@BeforeEach
     protected void setUp() throws Exception {
-	super.setUp();
 
     }
 
-    @Override
+@AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
+    @Test
     public void testIsDeviceSupported() throws Exception {
 
 	AbstractComponent component = new AbstractComponent() {
@@ -41,6 +38,7 @@ public class AbstractComponentTest extends TestCase {
 	assertTrue(component.isDeviceSupported("pdfwrite"));
     }
 
+    @Test
     public void testIsDeviceSupportedWithNonExistingDevice() throws Exception {
 
 	AbstractComponent component = new AbstractComponent() {

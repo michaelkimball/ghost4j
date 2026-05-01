@@ -12,7 +12,10 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.ghost4j.document.Document;
 import org.ghost4j.document.PSDocument;
@@ -22,22 +25,17 @@ import org.ghost4j.document.PSDocument;
  * 
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
-public class SafeAppenderModifierTest extends TestCase {
+public class SafeAppenderModifierTest {
 
-    public SafeAppenderModifierTest(String testName) {
-	super(testName);
-    }
-
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-	super.setUp();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
+    @Test
     public void testModifyWithPSAppendToPS() throws Exception {
 
 	PSDocument source = new PSDocument();
@@ -56,6 +54,7 @@ public class SafeAppenderModifierTest extends TestCase {
 	assertEquals(2, result.getPageCount());
     }
 
+    @Test
     public void testModifyWithPSAppendToMultiProcess() throws Exception {
 
 	final PSDocument source = new PSDocument();

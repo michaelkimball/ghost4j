@@ -5,31 +5,29 @@
 
 package org.ghost4j.util;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 
  * @author ggrousset
  */
-public class JavaForkTest extends TestCase {
+public class JavaForkTest {
 
-    public JavaForkTest(String testName) {
-	super(testName);
-    }
-
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-	super.setUp();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
     /**
      * Test of start method, of class JavaFork.
      */
+    @Test
     public void testStart() throws Exception {
 
 	// create fork

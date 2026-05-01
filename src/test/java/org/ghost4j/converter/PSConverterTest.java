@@ -10,27 +10,25 @@ package org.ghost4j.converter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.ghost4j.document.PDFDocument;
 import org.ghost4j.document.PSDocument;
 
-public class PSConverterTest extends TestCase {
+public class PSConverterTest {
 
-    public PSConverterTest(String testName) {
-	super(testName);
-    }
-
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-	super.setUp();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
+    @Test
     public void testConvertWithPS() throws Exception {
 
 	PSDocument document = new PSDocument();
@@ -46,6 +44,7 @@ public class PSConverterTest extends TestCase {
 	baos.close();
     }
 
+    @Test
     public void testConvertWithUnsupportedDocument() throws Exception {
 
 	PDFDocument document = new PDFDocument();
@@ -61,6 +60,7 @@ public class PSConverterTest extends TestCase {
 	baos.close();
     }
 
+    @Test
     public void testConvertWithPSMultiProcess() throws Exception {
 
 	final PSDocument document = new PSDocument();

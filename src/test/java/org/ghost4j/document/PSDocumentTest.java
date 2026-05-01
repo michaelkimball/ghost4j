@@ -10,30 +10,30 @@ package org.ghost4j.document;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PSDocument tests.
  * 
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
-public class PSDocumentTest extends TestCase {
+public class PSDocumentTest {
 
-    public PSDocumentTest(String testName) {
-	super(testName);
-    }
-
+    @BeforeEach
     protected void setUp() throws Exception {
-	super.setUp();
     }
 
+    @AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
     /**
      * Test of getPageCount method, of class PSDocument.
      */
+    @Test
     public void testGetPageCount() throws Exception {
 
 	// load document
@@ -44,6 +44,7 @@ public class PSDocumentTest extends TestCase {
 	assertEquals(1, document.getPageCount());
     }
 
+    @Test
     public void testLoadWrongFormat() throws Exception {
 
 	// load document (PDF when PS expected)
@@ -56,6 +57,7 @@ public class PSDocumentTest extends TestCase {
 	}
     }
 
+    @Test
     public void testExtractPages() throws Exception {
 
 	// load document (2 pages)
@@ -69,6 +71,7 @@ public class PSDocumentTest extends TestCase {
 	assertEquals(1, extracted.getPageCount());
     }
 
+    @Test
     public void testAppendPages() throws Exception {
 
 	// load document (1 page)
@@ -87,6 +90,7 @@ public class PSDocumentTest extends TestCase {
 
     }
 
+    @Test
     public void testAppendPagesWrongFormat() throws Exception {
 
 	// load document (2 pages)

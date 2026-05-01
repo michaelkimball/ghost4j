@@ -12,7 +12,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.ghost4j.Ghostscript;
 import org.ghost4j.document.PDFDocument;
@@ -24,21 +27,14 @@ import org.ghost4j.document.PSDocument;
  * @author Gilles Grousset (gi.grousset@gmail.com)
  * 
  */
-public class InkAnalyzerTest extends TestCase {
+public class InkAnalyzerTest {
 
-    public InkAnalyzerTest(String testName) {
-	super(testName);
-    }
-
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-	super.setUp();
-
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
     /**
@@ -82,6 +78,7 @@ public class InkAnalyzerTest extends TestCase {
 	return result;
     }
 
+    @Test
     public void testAnalyzeWithPDF() throws Exception {
 
 	if (this.testInkCovDeviceSupport()) {
@@ -101,6 +98,7 @@ public class InkAnalyzerTest extends TestCase {
 	}
     }
 
+    @Test
     public void testAnalyzeWithPS() throws Exception {
 
 	if (this.testInkCovDeviceSupport()) {
@@ -120,6 +118,7 @@ public class InkAnalyzerTest extends TestCase {
 	}
     }
 
+    @Test
     public void testAnalyzeWithPDFMultiProcess() throws Exception {
 
 	if (this.testInkCovDeviceSupport()) {

@@ -9,7 +9,10 @@ package org.ghost4j;
 
 import java.io.File;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
@@ -19,7 +22,7 @@ import com.sun.jna.ptr.IntByReference;
  * 
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
-public class GhostscriptLibraryTest extends TestCase {
+public class GhostscriptLibraryTest {
     
     private final String testResourcesPath = "target/test-classes";
 
@@ -31,24 +34,19 @@ public class GhostscriptLibraryTest extends TestCase {
     private static GhostscriptLibrary.stdout_fn staticStdoutCallback;
     private static GhostscriptLibrary.stderr_fn staticStderrCallback;
 
-    public GhostscriptLibraryTest(String testName) {
-	super(testName);
-
-	// create Ghostscript lib instance
+    @BeforeEach
+    protected void setUp() throws Exception {
 	ghostscriptLibrary = GhostscriptLibrary.instance;
     }
 
-    protected void setUp() throws Exception {
-	super.setUp();
-    }
-
+    @AfterEach
     protected void tearDown() throws Exception {
-	super.tearDown();
     }
 
     /**
      * Test of gsapi_revision method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_revision() {
 
 	// prepare revision structure and call revision function
@@ -62,6 +60,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_new_instance method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_new_instance() {
 
 	// create pointer to hold Ghostscript instance
@@ -83,6 +82,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_exit method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_exit() {
 
 	// create pointer to hold Ghostscript instance
@@ -118,6 +118,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_init_with_args method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_init_with_args() {
 
 	// create pointer to hold Ghostscript instance
@@ -154,7 +155,7 @@ public class GhostscriptLibraryTest extends TestCase {
 
 	// test
 	assertEquals(0, result);
-	assertTrue("output.pdf should have been created", outputFile.exists());
+	assertTrue(outputFile.exists(), "output.pdf should have been created");
 	outputFile.delete();
 
     }
@@ -162,6 +163,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_run_string method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_run_string() {
 
 	// create pointer to hold Ghostscript instance
@@ -193,6 +195,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_run_string_with_length method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_run_string_with_length() {
 
 	// create pointer to hold Ghostscript instance
@@ -224,6 +227,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_run_string_continue method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_run_string_continue() {
 
 	// create pointer to hold Ghostscript instance
@@ -259,6 +263,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_run_file method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_run_file() {
 
 	// create pointer to hold Ghostscript instance
@@ -295,6 +300,7 @@ public class GhostscriptLibraryTest extends TestCase {
     /**
      * Test of gsapi_set_stdio method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_set_stdio() {
 
 	// create pointer to hold Ghostscript instance
@@ -366,13 +372,14 @@ public class GhostscriptLibraryTest extends TestCase {
 	ghostscriptLibrary.gsapi_delete_instance(instanceByRef.getValue());
 
 	// assert std out was redirected (should contain "callbacks-work")
-	assertTrue("stdout callback should have received output, but buffer is: '" +
-		stdOutBuffer.toString() + "'", stdOutBuffer.toString().contains("callbacks-work"));
+	assertTrue(stdOutBuffer.toString().contains("callbacks-work"),
+		"stdout callback should have received output, but buffer is: '" + stdOutBuffer.toString() + "'");
     }
 
     /**
      * Test of gsapi_set_display_callback method, of class GhostscriptLibrary.
      */
+    @Test
     public void testGsapi_set_display_callback() {
 
 	// create pointer to hold Ghostscript instance
