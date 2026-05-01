@@ -14,19 +14,15 @@ import java.util.Map;
 /**
  * Defines a paper size. Standard sizes are defined as constants. Check
  * http://ghostscript.com/doc/current/Use.htm#Known_paper_sizes.
- * 
+ *
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
 public class PaperSize implements Serializable {
 
-    /**
-     * Serial UID.
-     */
+    /** Serial UID. */
     private static final long serialVersionUID = -1614204334526018509L;
 
-    /**
-     * Standard paper sizes index map. Allows faster paer size lookup by name.
-     */
+    /** Standard paper sizes index map. Allows faster paer size lookup by name. */
     private static final Map<String, PaperSize> index = new HashMap<String, PaperSize>();
 
     public static final PaperSize LEDGER = new PaperSize("ledger", 1224, 792);
@@ -49,119 +45,104 @@ public class PaperSize implements Serializable {
     public static final PaperSize A9 = new PaperSize("a9", 105, 148);
     public static final PaperSize A10 = new PaperSize("a10", 73, 105);
 
-    /**
-     * Paper width in points.
-     */
+    /** Paper width in points. */
     private final int width;
 
-    /**
-     * Paper height in points.
-     */
+    /** Paper height in points. */
     private final int height;
 
-    /**
-     * Paper name (if standard paper size)
-     */
+    /** Paper name (if standard paper size) */
     private String name;
 
     /**
      * Constructor accepting dimensions.
-     * 
-     * @param width
-     *            Width
-     * @param height
-     *            Height
+     *
+     * @param width Width
+     * @param height Height
      */
     public PaperSize(int width, int height) {
-	this.width = width;
-	this.height = height;
+        this.width = width;
+        this.height = height;
     }
 
     /**
      * Constructor accepting dimensions and name.
-     * 
-     * @param name
-     *            Name. If provided, considered as a standard size (will be
-     *            accessible with the getStandardPaperSize later on).
-     * @param width
-     *            Width
-     * @param height
-     *            Height
+     *
+     * @param name Name. If provided, considered as a standard size (will be accessible with the
+     *     getStandardPaperSize later on).
+     * @param width Width
+     * @param height Height
      */
     public PaperSize(String name, int width, int height) {
-	this.width = width;
-	this.height = height;
-	this.name = name;
+        this.width = width;
+        this.height = height;
+        this.name = name;
 
-	// if name: add to the index of standard sizes
-	if (this.name != null) {
-	    synchronized (index) {
-		index.put(this.name.toLowerCase(), this);
-	    }
-	}
+        // if name: add to the index of standard sizes
+        if (this.name != null) {
+            synchronized (index) {
+                index.put(this.name.toLowerCase(), this);
+            }
+        }
     }
 
     /**
      * Returns a scaled PaperSize according to a scale factor.
-     * 
-     * @param factor
-     *            Scale factor
+     *
+     * @param factor Scale factor
      * @return Scaled PaperSize
      */
     public PaperSize scale(float factor) {
 
-	return new PaperSize((int) (width * factor), (int) (height * factor));
-
+        return new PaperSize((int) (width * factor), (int) (height * factor));
     }
 
     /**
      * Returns a portrait orientation of the PaperSize.
-     * 
+     *
      * @return A PaperSize.
      */
     public PaperSize portrait() {
-	if (width > height) {
-	    return new PaperSize(height, width);
-	} else {
-	    return new PaperSize(width, height);
-	}
+        if (width > height) {
+            return new PaperSize(height, width);
+        } else {
+            return new PaperSize(width, height);
+        }
     }
 
     /**
      * Returns a landscape orientation of the PaperSize.
-     * 
+     *
      * @return A PaperSize.
      */
     public PaperSize landscape() {
-	if (width < height) {
-	    return new PaperSize(height, width);
-	} else {
-	    return new PaperSize(width, height);
-	}
+        if (width < height) {
+            return new PaperSize(height, width);
+        } else {
+            return new PaperSize(width, height);
+        }
     }
 
     /**
      * Looks for a standard paper size with a given name.
-     * 
-     * @param name
-     *            Paper size name (not case sensitive).
+     *
+     * @param name Paper size name (not case sensitive).
      * @return PaperSize found or null
      */
     public static synchronized PaperSize getStandardPaperSize(String name) {
 
-	return index.get(name.toLowerCase());
+        return index.get(name.toLowerCase());
     }
 
     public int getWidth() {
-	return width;
+        return width;
     }
 
     public int getHeight() {
-	return height;
+        return height;
     }
 
     public String getName() {
-	return name;
+        return name;
     }
-
 }

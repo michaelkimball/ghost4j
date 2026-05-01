@@ -18,295 +18,298 @@ import java.util.Enumeration;
 import java.util.Map;
 
 /**
- * This class allows launching another JVM from the current JVM. It takes the
- * same classpath as the parent JVM.
- * 
+ * This class allows launching another JVM from the current JVM. It takes the same classpath as the
+ * parent JVM.
+ *
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
 public class JavaFork implements Runnable {
 
     private static final String JAVA_COMMAND;
-    private static final String PATH_SEPARATOR = System
-	    .getProperty("path.separator");
-	private static final String FILE_SEPARATOR = File.separator;
+    private static final String PATH_SEPARATOR = System.getProperty("path.separator");
+    private static final String FILE_SEPARATOR = File.separator;
 
     static {
-	if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-	    JAVA_COMMAND = "javaw";
-	} else {
-	    JAVA_COMMAND = "java";
-	}
+        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+            JAVA_COMMAND = "javaw";
+        } else {
+            JAVA_COMMAND = "java";
+        }
     }
 
-    /**
-     * Start class of the JVM.
-     */
+    /** Start class of the JVM. */
     private Class<?> startClass;
-    /**
-     * Process object of the JVM. Is null if the JVM is not running.
-     */
+
+    /** Process object of the JVM. Is null if the JVM is not running. */
     private Process process;
-    /**
-     * If set to TRUE, output and error streams are redirected to the main JVM
-     * output stream
-     */
+
+    /** If set to TRUE, output and error streams are redirected to the main JVM output stream */
     private boolean redirectStreams;
-    /**
-     * If set to TRUE, main JVM will wait for this JVM to stop before exiting.
-     */
+
+    /** If set to TRUE, main JVM will wait for this JVM to stop before exiting. */
     private boolean waitBeforeExiting = false;
 
-    /**
-     * Additional environment variables.
-     */
+    /** Additional environment variables. */
     private Map<String, String> environment;
 
-    /**
-     * Xmx parameter. Default value is set to 128M.
-     */
+    /** Xmx parameter. Default value is set to 128M. */
     private String xmx = "128m";
 
-    /**
-     * Xms parameter. Default value is set to 64M.
-     */
+    /** Xms parameter. Default value is set to 64M. */
     private String xms = "64m";
 
     public void start(Class<?> startClass) {
 
-	this.setStartClass(startClass);
-	this.start();
-
+        this.setStartClass(startClass);
+        this.start();
     }
 
     public void start() {
 
-	// start thread
-	final Thread thread = new Thread(this);
-	thread.setDaemon(false);
-	thread.start();
+        // start thread
+        final Thread thread = new Thread(this);
+        thread.setDaemon(false);
+        thread.start();
 
-	// register shutdown hook to wait for thread when JVM exists
-	if (waitBeforeExiting) {
-	    Runtime.getRuntime().addShutdownHook(new Thread() {
+        // register shutdown hook to wait for thread when JVM exists
+        if (waitBeforeExiting) {
+            Runtime.getRuntime()
+                    .addShutdownHook(
+                            new Thread() {
 
-		@Override
-		public void run() {
-		    try {
-			thread.join();
-		    } catch (InterruptedException e) {
-			// nothing
-		    }
-		}
-
-	    });
-	}
-
+                                @Override
+                                public void run() {
+                                    try {
+                                        thread.join();
+                                    } catch (InterruptedException e) {
+                                        // nothing
+                                    }
+                                }
+                            });
+        }
     }
 
     public void stop() {
 
-	if (process != null) {
-	    process.destroy();
-	}
+        if (process != null) {
+            process.destroy();
+        }
     }
 
     public void run() {
 
-	// check if process is not already running
-	if (process != null) {
-	    throw new RuntimeException("Fork is already running");
-	}
+        // check if process is not already running
+        if (process != null) {
+            throw new RuntimeException("Fork is already running");
+        }
 
-	// check if start class is set
-	if (startClass == null) {
-	    throw new RuntimeException("No start class defined");
-	}
+        // check if start class is set
+        if (startClass == null) {
+            throw new RuntimeException("No start class defined");
+        }
 
-	// retrieve classpath
-	String classPath = this.getCurrentClasspath();
+        // retrieve classpath
+        String classPath = this.getCurrentClasspath();
 
-	// build child process
-	String ghost4JEncoding = System.getProperty("ghost4j.encoding");
-	String fileEncoding = "-Dfile.encoding=";
-	if (ghost4JEncoding != null) {
-	    fileEncoding += ghost4JEncoding;
-	} else {
-	    fileEncoding += System.getProperty("file.encoding");
-	}
-	ProcessBuilder processBuilder = new ProcessBuilder(JAVA_COMMAND,
-		fileEncoding, "-Xms" + xms, "-Xmx" + xmx, "-cp", classPath,
-		startClass.getName());
-	if (System.getProperty("jna.library.path") != null) {
-	    String jnaLibraryPath = "-Djna.library.path="
-		    + System.getProperty("jna.library.path");
-	    processBuilder = new ProcessBuilder(JAVA_COMMAND, fileEncoding,
-		    jnaLibraryPath, "-Xms" + xms, "-Xmx" + xmx, "-cp",
-		    classPath, startClass.getName());
-	}
-	processBuilder.directory(new File(System.getProperty("user.dir")));
-	processBuilder.environment().putAll(System.getenv());
-	if (getEnvironment() != null) {
-	    processBuilder.environment().putAll(getEnvironment());
-	}
+        // build child process
+        String ghost4JEncoding = System.getProperty("ghost4j.encoding");
+        String fileEncoding = "-Dfile.encoding=";
+        if (ghost4JEncoding != null) {
+            fileEncoding += ghost4JEncoding;
+        } else {
+            fileEncoding += System.getProperty("file.encoding");
+        }
+        ProcessBuilder processBuilder =
+                new ProcessBuilder(
+                        JAVA_COMMAND,
+                        fileEncoding,
+                        "-Xms" + xms,
+                        "-Xmx" + xmx,
+                        "-cp",
+                        classPath,
+                        startClass.getName());
+        if (System.getProperty("jna.library.path") != null) {
+            String jnaLibraryPath = "-Djna.library.path=" + System.getProperty("jna.library.path");
+            processBuilder =
+                    new ProcessBuilder(
+                            JAVA_COMMAND,
+                            fileEncoding,
+                            jnaLibraryPath,
+                            "-Xms" + xms,
+                            "-Xmx" + xmx,
+                            "-cp",
+                            classPath,
+                            startClass.getName());
+        }
+        processBuilder.directory(new File(System.getProperty("user.dir")));
+        processBuilder.environment().putAll(System.getenv());
+        if (getEnvironment() != null) {
+            processBuilder.environment().putAll(getEnvironment());
+        }
 
-	// start
-	try {
-	    process = processBuilder.start();
+        // start
+        try {
+            process = processBuilder.start();
 
-	    // redirect output stream to main process output stream
-	    if (redirectStreams) {
-		// error stream
-		processBuilder.redirectErrorStream(true);
-		// standard stream
-		StreamGobbler outputStreamGobbler = new StreamGobbler(
-			process.getInputStream(), System.out);
-		outputStreamGobbler.start();
-	    }
+            // redirect output stream to main process output stream
+            if (redirectStreams) {
+                // error stream
+                processBuilder.redirectErrorStream(true);
+                // standard stream
+                StreamGobbler outputStreamGobbler =
+                        new StreamGobbler(process.getInputStream(), System.out);
+                outputStreamGobbler.start();
+            }
 
-	    process.waitFor();
+            process.waitFor();
 
-	} catch (Exception e) {
-	    throw new RuntimeException(e);
-	}
-
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String getCurrentClasspath() {
-	StringBuilder cpBuilder = new StringBuilder();
-	ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-	
-	if(classLoader instanceof URLClassLoader) {
-		URL[] urls = ((URLClassLoader) classLoader).getURLs();
-	
-		for (int i = 0; i < urls.length; i++) {
-			// need to do some conversion to get the paths right
-			// otherwise paths get broken on windows
-			String s = urls[i].toExternalForm();
+        StringBuilder cpBuilder = new StringBuilder();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
-			try {
-			s = URLDecoder.decode(s, "UTF-8");
-			urls[i] = new URL(s);
-			s = new File(urls[i].getFile()).getAbsolutePath();
-			cpBuilder.append(s);
-			if (i < urls.length - 1)
-				cpBuilder.append(PATH_SEPARATOR);
-			} catch (UnsupportedEncodingException e) {
-			// should never happen as we pass supported encoding UTF-8
-			} catch (MalformedURLException e) {
-			// should also never happen at this point, but who knows ;-)
-			}
-		}
-	} else if (classLoader.getClass().getName().equals("org.jboss.modules.ModuleClassLoader")) {
-		// This branch is for JBoss 7 & JBoss EAP 6 support.  Not sure about Wildfly
-		try {
-			Enumeration<URL> urls2 =  classLoader.getResources("/");	 
-			
-			while (urls2.hasMoreElements()) {
-				URL path = urls2.nextElement();
-				String s = path.toExternalForm();
-				if(s.startsWith("vfs:")) {
-                    if(s.contains(".jar")) {
-						URLConnection conn = new URL(URLDecoder.decode(s, "UTF-8")).openConnection();
-						Object vf = conn.getContent();
-						// Use reflection to call getPhysicalFile() method org.jboss.vfs.VirtualFile
-						// This eliminates the dependency on JBoss specific jar files 
-						Method getPhysicalFile = vf.getClass().getDeclaredMethod("getPhysicalFile");
-						getPhysicalFile.setAccessible(true);
-						File physicalFile = (File)getPhysicalFile.invoke(vf);
-						String jarVFSPath = physicalFile.getAbsolutePath();
+        if (classLoader instanceof URLClassLoader) {
+            URL[] urls = ((URLClassLoader) classLoader).getURLs();
 
-                        int idxJarExt = jarVFSPath.lastIndexOf(".jar");
-                        int idxSlashAfterJar = jarVFSPath.indexOf(FILE_SEPARATOR, idxJarExt);
-                        int idxSlashBeforeJar = jarVFSPath.substring(0,idxJarExt).lastIndexOf(FILE_SEPARATOR);
+            for (int i = 0; i < urls.length; i++) {
+                // need to do some conversion to get the paths right
+                // otherwise paths get broken on windows
+                String s = urls[i].toExternalForm();
 
-                        String jarFileName2 = jarVFSPath.substring(idxSlashBeforeJar + 1, idxJarExt + 4);
-                        String jarFolder = jarVFSPath.substring(0, idxSlashAfterJar);
-                        String jarFullPath = jarFolder + FILE_SEPARATOR + jarFileName2;
-						
-                        cpBuilder.append(jarFullPath);
-						if (urls2.hasMoreElements()) {
-							cpBuilder.append(PATH_SEPARATOR);
-						}
-                    } else if(s.contains("classes")) {
-						URLConnection conn = new URL(URLDecoder.decode(s, "UTF-8")).openConnection();
-						Object vf = conn.getContent();
-						// Use reflection to call getPhysicalFile() method org.jboss.vfs.VirtualFile
-						// This eliminates the dependency on JBoss specific jar files 
-						Method getPhysicalFile = vf.getClass().getDeclaredMethod("getPhysicalFile");
-						getPhysicalFile.setAccessible(true);
-						File physicalFile = (File)getPhysicalFile.invoke(vf);
-						String jarVFSPath = physicalFile.getAbsolutePath();
-						cpBuilder.append(jarVFSPath);
-						if (urls2.hasMoreElements()) {
-							cpBuilder.append(PATH_SEPARATOR);
-						}
+                try {
+                    s = URLDecoder.decode(s, "UTF-8");
+                    urls[i] = new URL(s);
+                    s = new File(urls[i].getFile()).getAbsolutePath();
+                    cpBuilder.append(s);
+                    if (i < urls.length - 1) cpBuilder.append(PATH_SEPARATOR);
+                } catch (UnsupportedEncodingException e) {
+                    // should never happen as we pass supported encoding UTF-8
+                } catch (MalformedURLException e) {
+                    // should also never happen at this point, but who knows ;-)
+                }
+            }
+        } else if (classLoader.getClass().getName().equals("org.jboss.modules.ModuleClassLoader")) {
+            // This branch is for JBoss 7 & JBoss EAP 6 support.  Not sure about Wildfly
+            try {
+                Enumeration<URL> urls2 = classLoader.getResources("/");
+
+                while (urls2.hasMoreElements()) {
+                    URL path = urls2.nextElement();
+                    String s = path.toExternalForm();
+                    if (s.startsWith("vfs:")) {
+                        if (s.contains(".jar")) {
+                            URLConnection conn =
+                                    new URL(URLDecoder.decode(s, "UTF-8")).openConnection();
+                            Object vf = conn.getContent();
+                            // Use reflection to call getPhysicalFile() method
+                            // org.jboss.vfs.VirtualFile
+                            // This eliminates the dependency on JBoss specific jar files
+                            Method getPhysicalFile =
+                                    vf.getClass().getDeclaredMethod("getPhysicalFile");
+                            getPhysicalFile.setAccessible(true);
+                            File physicalFile = (File) getPhysicalFile.invoke(vf);
+                            String jarVFSPath = physicalFile.getAbsolutePath();
+
+                            int idxJarExt = jarVFSPath.lastIndexOf(".jar");
+                            int idxSlashAfterJar = jarVFSPath.indexOf(FILE_SEPARATOR, idxJarExt);
+                            int idxSlashBeforeJar =
+                                    jarVFSPath.substring(0, idxJarExt).lastIndexOf(FILE_SEPARATOR);
+
+                            String jarFileName2 =
+                                    jarVFSPath.substring(idxSlashBeforeJar + 1, idxJarExt + 4);
+                            String jarFolder = jarVFSPath.substring(0, idxSlashAfterJar);
+                            String jarFullPath = jarFolder + FILE_SEPARATOR + jarFileName2;
+
+                            cpBuilder.append(jarFullPath);
+                            if (urls2.hasMoreElements()) {
+                                cpBuilder.append(PATH_SEPARATOR);
+                            }
+                        } else if (s.contains("classes")) {
+                            URLConnection conn =
+                                    new URL(URLDecoder.decode(s, "UTF-8")).openConnection();
+                            Object vf = conn.getContent();
+                            // Use reflection to call getPhysicalFile() method
+                            // org.jboss.vfs.VirtualFile
+                            // This eliminates the dependency on JBoss specific jar files
+                            Method getPhysicalFile =
+                                    vf.getClass().getDeclaredMethod("getPhysicalFile");
+                            getPhysicalFile.setAccessible(true);
+                            File physicalFile = (File) getPhysicalFile.invoke(vf);
+                            String jarVFSPath = physicalFile.getAbsolutePath();
+                            cpBuilder.append(jarVFSPath);
+                            if (urls2.hasMoreElements()) {
+                                cpBuilder.append(PATH_SEPARATOR);
+                            }
+                        }
                     }
-				}
-			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-    }
-    // else: unknown classloader — leave cpBuilder empty so the java.class.path fallback below is used
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        // else: unknown classloader — leave cpBuilder empty so the java.class.path fallback below
+        // is used
 
-	String cp = cpBuilder.toString();
+        String cp = cpBuilder.toString();
 
-	if (cp.isEmpty() || cp.contains("surefirebooter")) {
-	    // if called from Maven: use the java.class.path property as
-	    // classpath
-	    return System.getProperty("java.class.path");
-	} else {
-	    return cp;
-	}
-
+        if (cp.isEmpty() || cp.contains("surefirebooter")) {
+            // if called from Maven: use the java.class.path property as
+            // classpath
+            return System.getProperty("java.class.path");
+        } else {
+            return cp;
+        }
     }
 
     public Class<?> getStartClass() {
-	return startClass;
+        return startClass;
     }
 
     public void setStartClass(Class<?> startClass) {
-	this.startClass = startClass;
+        this.startClass = startClass;
     }
 
     public boolean getRedirectStreams() {
-	return redirectStreams;
+        return redirectStreams;
     }
 
     public void setRedirectStreams(boolean redirectStreams) {
-	this.redirectStreams = redirectStreams;
+        this.redirectStreams = redirectStreams;
     }
 
     public boolean getWaitBeforeExiting() {
-	return waitBeforeExiting;
+        return waitBeforeExiting;
     }
 
     public void setWaitBeforeExiting(boolean waitBeforeExiting) {
-	this.waitBeforeExiting = waitBeforeExiting;
+        this.waitBeforeExiting = waitBeforeExiting;
     }
 
     public Map<String, String> getEnvironment() {
-	return environment;
+        return environment;
     }
 
     public void setEnvironment(Map<String, String> environment) {
-	this.environment = environment;
+        this.environment = environment;
     }
 
     public String getXmx() {
-	return xmx;
+        return xmx;
     }
 
     public void setXmx(String xmx) {
-	this.xmx = xmx;
+        this.xmx = xmx;
     }
 
     public String getXms() {
-	return xms;
+        return xms;
     }
 
     public void setXms(String xms) {
-	this.xms = xms;
+        this.xms = xms;
     }
-
 }

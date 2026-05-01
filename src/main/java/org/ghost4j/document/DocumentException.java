@@ -8,32 +8,29 @@
 package org.ghost4j.document;
 
 /**
- * Class representing a document exception. This exception may be thrown while
- * handling a subclass of Document interface.
- * 
+ * Class representing a document exception. This exception may be thrown while handling a subclass
+ * of Document interface.
+ *
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
 public class DocumentException extends Exception {
 
-    /**
-     * Serial version UID.
-     */
+    /** Serial version UID. */
     private static final long serialVersionUID = 3773482793220746656L;
 
     public DocumentException() {
-	super();
+        super();
     }
 
     public DocumentException(String message) {
-	super(message);
+        super(message);
     }
 
     public DocumentException(Throwable cause) {
-	super(cause);
+        super(cause);
     }
 
     public DocumentException(String message, Throwable cause) {
-	super(message, cause);
+        super(message, cause);
     }
-
 }

@@ -11,8 +11,8 @@ public class ForkTest {
 
     public static void main(String[] args) throws Exception {
 
-	System.out.println("START FORKED");
-	Thread.sleep(1000);
-	System.out.println("END FORKED");
+        System.out.println("START FORKED");
+        Thread.sleep(1000);
+        System.out.println("END FORKED");
     }
 }

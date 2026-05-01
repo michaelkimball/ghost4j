@@ -6,121 +6,121 @@
  */
 package org.ghost4j.renderer;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.awt.Image;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.ghost4j.document.PDFDocument;
+import org.ghost4j.document.PSDocument;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-
-import org.ghost4j.document.PDFDocument;
-import org.ghost4j.document.PSDocument;
 
 /**
  * SimpleRenderer tests.
- * 
+ *
  * @author Gilles Grousset (gi.grousset@gmail.com)
- * 
  */
 public class SimpleRendererTest {
 
     @BeforeEach
-    protected void setUp() throws Exception {
-    }
+    protected void setUp() throws Exception {}
 
     @AfterEach
-    protected void tearDown() throws Exception {
-    }
+    protected void tearDown() throws Exception {}
 
     @Test
     public void testRenderWithPDF() throws Exception {
 
-	PDFDocument document = new PDFDocument();
-	document.load(this.getClass().getClassLoader().getResourceAsStream("input.pdf"));
+        PDFDocument document = new PDFDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input.pdf"));
 
-	SimpleRenderer simpleRenderer = new SimpleRenderer();
-	List<Image> result = simpleRenderer.render(document);
+        SimpleRenderer simpleRenderer = new SimpleRenderer();
+        List<Image> result = simpleRenderer.render(document);
 
-	assertEquals(1, result.size());
+        assertEquals(1, result.size());
     }
 
     @Test
     public void testRenderWithPS() throws Exception {
 
-	PSDocument document = new PSDocument();
-	document.load(this.getClass().getClassLoader().getResourceAsStream("input.ps"));
+        PSDocument document = new PSDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input.ps"));
 
-	SimpleRenderer simpleRenderer = new SimpleRenderer();
-	List<Image> result = simpleRenderer.render(document);
+        SimpleRenderer simpleRenderer = new SimpleRenderer();
+        List<Image> result = simpleRenderer.render(document);
 
-	assertEquals(1, result.size());
+        assertEquals(1, result.size());
     }
 
     @Test
     public void testRenderWithPSMultiProcess() throws Exception {
 
-	final PSDocument document = new PSDocument();
-	document.load(this.getClass().getClassLoader().getResourceAsStream("input.ps"));
+        final PSDocument document = new PSDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input.ps"));
 
-	final SimpleRenderer simpleRenderer = new SimpleRenderer();
-	simpleRenderer.setMaxProcessCount(2);
+        final SimpleRenderer simpleRenderer = new SimpleRenderer();
+        simpleRenderer.setMaxProcessCount(2);
 
-	final List<Image> result1 = new ArrayList<Image>();
-	final List<Image> result2 = new ArrayList<Image>();
-	final List<Image> result3 = new ArrayList<Image>();
+        final List<Image> result1 = new ArrayList<Image>();
+        final List<Image> result2 = new ArrayList<Image>();
+        final List<Image> result3 = new ArrayList<Image>();
 
-	Thread thread1 = new Thread() {
-	    public void run() {
-		try {
-		    System.out.println("START 1 " + Thread.currentThread());
-		    result1.addAll(simpleRenderer.render(document));
-		    System.out.println("END 1 " + Thread.currentThread());
+        Thread thread1 =
+                new Thread() {
+                    public void run() {
+                        try {
+                            System.out.println("START 1 " + Thread.currentThread());
+                            result1.addAll(simpleRenderer.render(document));
+                            System.out.println("END 1 " + Thread.currentThread());
 
-		} catch (Exception e) {
-		    e.printStackTrace();
-		}
-	    };
-	};
-	thread1.start();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    ;
+                };
+        thread1.start();
 
-	Thread thread2 = new Thread() {
-	    public void run() {
-		try {
-		    System.out.println("START 2 " + Thread.currentThread());
-		    result2.addAll(simpleRenderer.render(document));
-		    System.out.println("END 2 " + Thread.currentThread());
+        Thread thread2 =
+                new Thread() {
+                    public void run() {
+                        try {
+                            System.out.println("START 2 " + Thread.currentThread());
+                            result2.addAll(simpleRenderer.render(document));
+                            System.out.println("END 2 " + Thread.currentThread());
 
-		} catch (Exception e) {
-		    e.printStackTrace();
-		}
-	    };
-	};
-	thread2.start();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    ;
+                };
+        thread2.start();
 
-	// the last one will block until a previous one finishes
-	Thread thread3 = new Thread() {
-	    public void run() {
-		try {
-		    System.out.println("START 3 " + Thread.currentThread());
-		    result3.addAll(simpleRenderer.render(document));
-		    System.out.println("END 3 " + Thread.currentThread());
-		} catch (Exception e) {
-		    e.printStackTrace();
-		}
-	    };
-	};
-	thread3.start();
+        // the last one will block until a previous one finishes
+        Thread thread3 =
+                new Thread() {
+                    public void run() {
+                        try {
+                            System.out.println("START 3 " + Thread.currentThread());
+                            result3.addAll(simpleRenderer.render(document));
+                            System.out.println("END 3 " + Thread.currentThread());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    ;
+                };
+        thread3.start();
 
-	thread1.join();
-	thread2.join();
-	thread3.join();
+        thread1.join();
+        thread2.join();
+        thread3.join();
 
-	assertEquals(1, result1.size());
-	assertEquals(1, result2.size());
-	assertEquals(1, result3.size());
+        assertEquals(1, result1.size());
+        assertEquals(1, result2.size());
+        assertEquals(1, result3.size());
     }
-
 }

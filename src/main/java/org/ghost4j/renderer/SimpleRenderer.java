@@ -10,7 +10,6 @@ package org.ghost4j.renderer;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.ghost4j.Ghostscript;
 import org.ghost4j.GhostscriptException;
 import org.ghost4j.display.PageRaster;
@@ -28,118 +27,119 @@ public class SimpleRenderer extends AbstractRemoteRenderer {
     public static final int OPTION_ANTIALIASING_MEDIUM = 2;
     public static final int OPTION_ANTIALIASING_HIGH = 4;
 
-    /**
-     * Define subsample antialiasing level (default is high).
-     */
+    /** Define subsample antialiasing level (default is high). */
     private int antialiasing = OPTION_ANTIALIASING_HIGH;
 
-    /**
-     * Define renderer output resolution in DPI (default is 75dpi).
-     */
+    /** Define renderer output resolution in DPI (default is 75dpi). */
     private int resolution = 75;
 
     public SimpleRenderer() {
 
-	// set supported classes
-	supportedDocumentClasses = new Class[2];
-	supportedDocumentClasses[0] = PDFDocument.class;
-	supportedDocumentClasses[1] = PSDocument.class;
+        // set supported classes
+        supportedDocumentClasses = new Class[2];
+        supportedDocumentClasses[0] = PDFDocument.class;
+        supportedDocumentClasses[1] = PSDocument.class;
     }
 
     /**
      * Main method used to start the renderer in standalone 'slave mode'.
-     * 
+     *
      * @param args
      * @throws RendererException
      */
     public static void main(String[] args) throws RendererException {
 
-	startRemoteRenderer(new SimpleRenderer());
+        startRemoteRenderer(new SimpleRenderer());
     }
 
     @Override
     public List<PageRaster> run(Document document, int begin, int end)
-	    throws IOException, RendererException, DocumentException {
+            throws IOException, RendererException, DocumentException {
 
-	// assert document is supported
-	this.assertDocumentSupported(document);
+        // assert document is supported
+        this.assertDocumentSupported(document);
 
-	// get Ghostscript instance
-	Ghostscript gs = Ghostscript.getInstance();
+        // get Ghostscript instance
+        Ghostscript gs = Ghostscript.getInstance();
 
-	// generate a unique diskstore key for input file
-	DiskStore diskStore = DiskStore.getInstance();
-	String inputDiskStoreKey = diskStore.generateUniqueKey();
-	// write document to input file
-	document.write(diskStore.addFile(inputDiskStoreKey));
+        // generate a unique diskstore key for input file
+        DiskStore diskStore = DiskStore.getInstance();
+        String inputDiskStoreKey = diskStore.generateUniqueKey();
+        // write document to input file
+        document.write(diskStore.addFile(inputDiskStoreKey));
 
-	// create display callback
-	PageRasterDisplayCallback displayCallback = new PageRasterDisplayCallback();
+        // create display callback
+        PageRasterDisplayCallback displayCallback = new PageRasterDisplayCallback();
 
-	// prepare args
-	String[] gsArgs = { "-dQUIET", "-dNOPAUSE", "-dBATCH", "-dSAFER",
-		"-dFirstPage=" + (begin + 1), "-dLastPage=" + (end + 1),
-		"-sDEVICE=display", "-sDisplayHandle=0",
-		"-dDisplayFormat=16#804", "-r" + this.getResolution()};
+        // prepare args
+        String[] gsArgs = {
+            "-dQUIET",
+            "-dNOPAUSE",
+            "-dBATCH",
+            "-dSAFER",
+            "-dFirstPage=" + (begin + 1),
+            "-dLastPage=" + (end + 1),
+            "-sDEVICE=display",
+            "-sDisplayHandle=0",
+            "-dDisplayFormat=16#804",
+            "-r" + this.getResolution()
+        };
 
-	// antialiasing
-	if (this.antialiasing != OPTION_ANTIALIASING_NONE) {
-	    gsArgs = Arrays.copyOf(gsArgs, gsArgs.length + 2);
-	    gsArgs[gsArgs.length - 2] = "-dTextAlphaBits=" + this.antialiasing;
-	    gsArgs[gsArgs.length - 1] = "-dGraphicsAlphaBits="
-		    + this.antialiasing;
-	}
-	
-	// add file path args
-	gsArgs = Arrays.copyOf(gsArgs, gsArgs.length + 2);
-	gsArgs[gsArgs.length - 2] = "-f";
-	gsArgs[gsArgs.length - 1] = diskStore.getFile(inputDiskStoreKey).getAbsolutePath();
+        // antialiasing
+        if (this.antialiasing != OPTION_ANTIALIASING_NONE) {
+            gsArgs = Arrays.copyOf(gsArgs, gsArgs.length + 2);
+            gsArgs[gsArgs.length - 2] = "-dTextAlphaBits=" + this.antialiasing;
+            gsArgs[gsArgs.length - 1] = "-dGraphicsAlphaBits=" + this.antialiasing;
+        }
 
-	// execute and exit interpreter
-	try {
-	    synchronized (gs) {
+        // add file path args
+        gsArgs = Arrays.copyOf(gsArgs, gsArgs.length + 2);
+        gsArgs[gsArgs.length - 2] = "-f";
+        gsArgs[gsArgs.length - 1] = diskStore.getFile(inputDiskStoreKey).getAbsolutePath();
 
-		// set display callback
-		gs.setDisplayCallback(displayCallback);
+        // execute and exit interpreter
+        try {
+            synchronized (gs) {
 
-		gs.initialize(gsArgs);
-		gs.exit();
+                // set display callback
+                gs.setDisplayCallback(displayCallback);
 
-	    }
-	} catch (GhostscriptException e) {
+                gs.initialize(gsArgs);
+                gs.exit();
+            }
+        } catch (GhostscriptException e) {
 
-	    throw new RendererException(e);
+            throw new RendererException(e);
 
-	} finally {
+        } finally {
 
-	    // delete Ghostscript instance
-	    try {
-		Ghostscript.deleteInstance();
-	    } catch (GhostscriptException e) {
-		throw new RendererException(e);
-	    }
+            // delete Ghostscript instance
+            try {
+                Ghostscript.deleteInstance();
+            } catch (GhostscriptException e) {
+                throw new RendererException(e);
+            }
 
-	    // remove temporary file
-	    diskStore.removeFile(inputDiskStoreKey);
-	}
+            // remove temporary file
+            diskStore.removeFile(inputDiskStoreKey);
+        }
 
-	return displayCallback.getRasters();
-
+        return displayCallback.getRasters();
     }
 
     public int getAntialiasing() {
-	return antialiasing;
+        return antialiasing;
     }
 
     public void setAntialiasing(int antialiasing) {
-	this.antialiasing = antialiasing;
+        this.antialiasing = antialiasing;
     }
 
     public int getResolution() {
-	return resolution;
+        return resolution;
     }
 
     public void setResolution(int resolution) {
-	this.resolution = resolution;
+        this.resolution = resolution;
     }
 }

@@ -8,31 +8,29 @@
 package org.ghost4j.converter;
 
 /**
- * Class representing a converter exception. This exception may be thrown while
- * converting a document with a Converter subclass.
- * 
+ * Class representing a converter exception. This exception may be thrown while converting a
+ * document with a Converter subclass.
+ *
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
 public class ConverterException extends Exception {
 
-    /**
-     * Serial version UID.
-     */
+    /** Serial version UID. */
     private static final long serialVersionUID = -4246261539550729104L;
 
     public ConverterException() {
-	super();
+        super();
     }
 
     public ConverterException(String message) {
-	super(message);
+        super(message);
     }
 
     public ConverterException(Throwable cause) {
-	super(cause);
+        super(cause);
     }
 
     public ConverterException(String message, Throwable cause) {
-	super(message, cause);
+        super(message, cause);
     }
 }

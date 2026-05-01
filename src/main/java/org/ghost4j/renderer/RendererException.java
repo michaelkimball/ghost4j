@@ -8,31 +8,29 @@
 package org.ghost4j.renderer;
 
 /**
- * Class representing a renderer exception. This exception may be thrown while
- * rendering a document with a Renderer subclass.
- * 
+ * Class representing a renderer exception. This exception may be thrown while rendering a document
+ * with a Renderer subclass.
+ *
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
 public class RendererException extends Exception {
 
-    /**
-     * Serial version UID.
-     */
+    /** Serial version UID. */
     private static final long serialVersionUID = -822410652352349391L;
 
     public RendererException() {
-	super();
+        super();
     }
 
     public RendererException(String message) {
-	super(message);
+        super(message);
     }
 
     public RendererException(Throwable cause) {
-	super(cause);
+        super(cause);
     }
 
     public RendererException(String message, Throwable cause) {
-	super(message, cause);
+        super(message, cause);
     }
 }
