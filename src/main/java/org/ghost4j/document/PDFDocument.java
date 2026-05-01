@@ -7,11 +7,10 @@
 
 package org.ghost4j.document;
 
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfCopy;
-import com.lowagie.text.pdf.PdfImportedPage;
-import com.lowagie.text.pdf.PdfReader;
-import com.lowagie.text.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.utils.PdfMerger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,16 +32,23 @@ public class PDFDocument extends AbstractDocument {
         // check that the file is a PDF
         ByteArrayInputStream bais = null;
         PdfReader reader = null;
+        PdfDocument pdfDoc = null;
 
         try {
 
             bais = new ByteArrayInputStream(content);
             reader = new PdfReader(bais);
+            pdfDoc = new PdfDocument(reader);
 
         } catch (Exception e) {
             throw new IOException("PDF document is not valid");
         } finally {
-            if (reader != null) reader.close();
+            if (pdfDoc != null) pdfDoc.close();
+            else if (reader != null)
+                try {
+                    reader.close();
+                } catch (Exception ignored) {
+                }
             IOUtils.closeQuietly(bais);
         }
     }
@@ -56,18 +62,18 @@ public class PDFDocument extends AbstractDocument {
         }
 
         ByteArrayInputStream bais = null;
-        PdfReader reader = null;
+        PdfDocument pdfDoc = null;
 
         try {
 
             bais = new ByteArrayInputStream(content);
-            reader = new PdfReader(bais);
-            pageCount = reader.getNumberOfPages();
+            pdfDoc = new PdfDocument(new PdfReader(bais));
+            pageCount = pdfDoc.getNumberOfPages();
 
         } catch (Exception e) {
             throw new DocumentException(e);
         } finally {
-            if (reader != null) reader.close();
+            if (pdfDoc != null) pdfDoc.close();
             IOUtils.closeQuietly(bais);
         }
 
@@ -85,38 +91,31 @@ public class PDFDocument extends AbstractDocument {
 
         if (content != null) {
 
-            com.lowagie.text.Document document = new com.lowagie.text.Document();
+            PdfDocument sourcePdf = null;
+            PdfDocument destPdf = null;
 
             try {
 
                 bais = new ByteArrayInputStream(content);
                 baos = new ByteArrayOutputStream();
 
-                PdfReader inputPDF = new PdfReader(bais);
+                sourcePdf = new PdfDocument(new PdfReader(bais));
+                destPdf = new PdfDocument(new PdfWriter(baos));
 
-                // create a writer for the outputstream
-                PdfWriter writer = PdfWriter.getInstance(document, baos);
+                sourcePdf.copyPagesTo(begin, end, destPdf);
 
-                document.open();
-                PdfContentByte cb = writer.getDirectContent();
-
-                PdfImportedPage page;
-
-                while (begin <= end) {
-                    document.newPage();
-                    page = writer.getImportedPage(inputPDF, begin);
-                    cb.addTemplate(page, 0, 0);
-                    begin++;
-                }
-
-                document.close();
+                destPdf.close();
+                destPdf = null;
+                sourcePdf.close();
+                sourcePdf = null;
 
                 result.load(new ByteArrayInputStream(baos.toByteArray()));
 
             } catch (Exception e) {
                 throw new DocumentException(e);
             } finally {
-                if (document.isOpen()) document.close();
+                if (destPdf != null) destPdf.close();
+                if (sourcePdf != null) sourcePdf.close();
                 IOUtils.closeQuietly(bais);
                 IOUtils.closeQuietly(baos);
             }
@@ -131,30 +130,31 @@ public class PDFDocument extends AbstractDocument {
         super.append(document);
 
         ByteArrayOutputStream baos = null;
-        com.lowagie.text.Document mergedDocument = new com.lowagie.text.Document();
+        PdfDocument mergedPdf = null;
+        PdfDocument source1 = null;
+        PdfDocument source2 = null;
 
         try {
 
             baos = new ByteArrayOutputStream();
-            PdfCopy copy = new PdfCopy(mergedDocument, baos);
+            mergedPdf = new PdfDocument(new PdfWriter(baos));
+            PdfMerger merger = new PdfMerger(mergedPdf);
 
-            mergedDocument.open();
+            // merge current document
+            source1 = new PdfDocument(new PdfReader(new ByteArrayInputStream(content)));
+            merger.merge(source1, 1, source1.getNumberOfPages());
+            source1.close();
+            source1 = null;
 
-            // copy current document
-            PdfReader reader = new PdfReader(content);
-            int pageCount = reader.getNumberOfPages();
-            for (int i = 0; i < pageCount; ) {
-                copy.addPage(copy.getImportedPage(reader, ++i));
-            }
+            // merge new document
+            source2 =
+                    new PdfDocument(new PdfReader(new ByteArrayInputStream(document.getContent())));
+            merger.merge(source2, 1, source2.getNumberOfPages());
+            source2.close();
+            source2 = null;
 
-            // copy new document
-            reader = new PdfReader(document.getContent());
-            pageCount = reader.getNumberOfPages();
-            for (int i = 0; i < pageCount; ) {
-                copy.addPage(copy.getImportedPage(reader, ++i));
-            }
-
-            mergedDocument.close();
+            mergedPdf.close();
+            mergedPdf = null;
 
             // replace content with new content
             content = baos.toByteArray();
@@ -162,7 +162,9 @@ public class PDFDocument extends AbstractDocument {
         } catch (Exception e) {
             throw new DocumentException(e);
         } finally {
-            if (mergedDocument.isOpen()) mergedDocument.close();
+            if (source2 != null) source2.close();
+            if (source1 != null) source1.close();
+            if (mergedPdf != null) mergedPdf.close();
             IOUtils.closeQuietly(baos);
         }
     }
