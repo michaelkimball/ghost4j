@@ -184,7 +184,7 @@ Test resources live in `src/test/resources/` and are loaded via the classloader.
 Before considering a change complete:
 1. `./gradlew spotlessApply` — format all sources.
 2. `./gradlew compileJava compileTestJava` — both compile cleanly.
-3. `./gradlew test` — all tests pass (48 tests as of May 2026). Requires Ghostscript installed.
+3. `./gradlew test` — all tests pass (57 tests as of May 2026). Requires Ghostscript installed.
 4. New component types follow the `Component → AbstractComponent → AbstractRemoteComponent → ConcreteClass` hierarchy.
 5. New converters/renderers/modifiers must implement `run()` and a static `main()` that calls the appropriate `startRemote*()` method.
 

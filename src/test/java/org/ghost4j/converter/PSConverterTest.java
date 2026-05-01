@@ -41,7 +41,7 @@ public class PSConverterTest {
     }
 
     @Test
-    public void testConvertWithUnsupportedDocument() throws Exception {
+    public void testConvertWithPDF() throws Exception {
 
         PDFDocument document = new PDFDocument();
         document.load(this.getClass().getClassLoader().getResourceAsStream("input.pdf"));
@@ -130,5 +130,21 @@ public class PSConverterTest {
 
         assertTrue(baos3.size() > 0);
         baos3.close();
+    }
+
+    @Test
+    public void testConvertWithPSMultiPage() throws Exception {
+
+        PSDocument document = new PSDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input-2pages.ps"));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        PSConverter converter = new PSConverter();
+        converter.convert(document, baos);
+
+        assertTrue(baos.size() > 0);
+
+        baos.close();
     }
 }

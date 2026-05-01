@@ -9,7 +9,11 @@ package org.ghost4j.document;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,5 +106,31 @@ public class PSDocumentTest {
         } catch (DocumentException e) {
             assertEquals("Cannot append document of different types", e.getMessage());
         }
+    }
+
+    @Test
+    public void testLoadFromFile() throws Exception {
+
+        File tempFile = File.createTempFile("ghost4j-test", ".ps");
+        tempFile.deleteOnExit();
+        try (InputStream is = this.getClass().getClassLoader().getResourceAsStream("input.ps")) {
+            Files.copy(is, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        PSDocument document = new PSDocument();
+        document.load(tempFile);
+
+        assertEquals(1, document.getPageCount());
+    }
+
+    @Test
+    public void testGetContent() throws Exception {
+
+        PSDocument document = new PSDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input.ps"));
+
+        assertNotNull(document.getContent());
+        assertTrue(document.getContent().length > 0);
+        assertEquals(document.getSize(), document.getContent().length);
     }
 }

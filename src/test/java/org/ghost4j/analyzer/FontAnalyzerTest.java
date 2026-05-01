@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.ghost4j.document.DocumentException;
 import org.ghost4j.document.PDFDocument;
+import org.ghost4j.document.PSDocument;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -110,5 +112,16 @@ public class FontAnalyzerTest {
         assertEquals(6, result1.size());
         assertEquals(6, result2.size());
         assertEquals(6, result3.size());
+    }
+
+    @Test
+    public void testAnalyzeWithUnsupportedDocument() throws Exception {
+
+        PSDocument document = new PSDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input.ps"));
+
+        FontAnalyzer fontAnalyzer = new FontAnalyzer();
+
+        assertThrows(DocumentException.class, () -> fontAnalyzer.analyze(document));
     }
 }

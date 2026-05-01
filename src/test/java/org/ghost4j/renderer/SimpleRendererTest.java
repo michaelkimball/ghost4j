@@ -123,4 +123,42 @@ public class SimpleRendererTest {
         assertEquals(1, result2.size());
         assertEquals(1, result3.size());
     }
+
+    @Test
+    public void testRenderWithPDFMultiPage() throws Exception {
+
+        PDFDocument document = new PDFDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input-2pages.pdf"));
+
+        SimpleRenderer simpleRenderer = new SimpleRenderer();
+        List<Image> result = simpleRenderer.render(document);
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    public void testRenderWithCustomResolution() throws Exception {
+
+        PDFDocument document = new PDFDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input.pdf"));
+
+        SimpleRenderer simpleRenderer = new SimpleRenderer();
+        simpleRenderer.setResolution(150);
+        List<Image> result = simpleRenderer.render(document);
+
+        assertEquals(1, result.size());
+        assertNotNull(result.get(0));
+    }
+
+    @Test
+    public void testRenderPageRange() throws Exception {
+
+        PDFDocument document = new PDFDocument();
+        document.load(this.getClass().getClassLoader().getResourceAsStream("input-2pages.pdf"));
+
+        SimpleRenderer simpleRenderer = new SimpleRenderer();
+        List<Image> result = simpleRenderer.render(document, 0, 0);
+
+        assertEquals(1, result.size());
+    }
 }
