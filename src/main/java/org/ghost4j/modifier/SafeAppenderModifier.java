@@ -94,8 +94,9 @@ public class SafeAppenderModifier extends AbstractRemoteModifier {
         }
 
         // prepare args
+        // Note: Ghostscript.initialize() prepends "gs" as argv[0] automatically;
+        // no additional program-name placeholder is needed here.
         String[] gsArgs = {
-            "-psconv",
             "-dNOPAUSE",
             "-dSAFER",
             "-dBATCH",

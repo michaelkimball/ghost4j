@@ -121,18 +121,19 @@ public class PDFConverter extends AbstractRemoteConverter {
         String diskStoreKey = diskStore.generateUniqueKey();
 
         // prepare Ghostscript interpreter parameters
-        int argCount = 15;
+        // Note: Ghostscript.initialize() prepends "gs" as argv[0] automatically;
+        // no additional program-name placeholder is needed here.
+        int argCount = 14;
         if (autoRotatePages != OPTION_AUTOROTATEPAGES_OFF) {
             argCount++;
         }
         String[] gsArgs = new String[argCount];
 
-        gsArgs[0] = "-ps2pdf";
-        gsArgs[1] = "-dNOPAUSE";
-        gsArgs[2] = "-dBATCH";
-        gsArgs[3] = "-dSAFER";
+        gsArgs[0] = "-dNOPAUSE";
+        gsArgs[1] = "-dBATCH";
+        gsArgs[2] = "-dSAFER";
 
-        int paramPosition = 3;
+        int paramPosition = 2;
 
         // autorotatepages
         switch (autoRotatePages) {

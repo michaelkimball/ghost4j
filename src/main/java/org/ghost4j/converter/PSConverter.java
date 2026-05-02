@@ -110,9 +110,9 @@ public class PSConverter extends AbstractRemoteConverter {
         document.write(diskStore.addFile(inputDiskStoreKey));
 
         // prepare Ghostscript interpreter parameters
+        // Note: Ghostscript.initialize() prepends "gs" as argv[0] automatically;
+        // no additional program-name placeholder is needed here.
         String[] gsArgs = {
-            // dummy value to prevent interpreter from blocking
-            "-psconv",
             "-dNOPAUSE",
             "-dBATCH",
             "-dSAFER",
