@@ -310,9 +310,9 @@ public class GhostscriptTest {
 
     /**
      * Test that runFile succeeds under -dSAFER when the file's directory is permitted via
-     * gsapi_add_control_path using a wildcard. GS path-control matching requires {@code dir/*}
-     * (not a bare directory path) to permit all files directly inside a directory; the path must
-     * be added before gsapi_init_with_args is called.
+     * gsapi_add_control_path using a wildcard. GS path-control matching requires {@code dir/*} (not
+     * a bare directory path) to permit all files directly inside a directory; the path must be
+     * added before gsapi_init_with_args is called.
      */
     @Test
     public void testRunFileWithSaferAndPermitFileAll() {
@@ -328,8 +328,7 @@ public class GhostscriptTest {
             // A bare directory path (with or without trailing slash) does not
             // match direct children — only subdirectory paths. Must be called
             // before initialize().
-            gs.addControlPath(
-                    Ghostscript.PERMIT_FILE_READING, file.getParent() + "/*");
+            gs.addControlPath(Ghostscript.PERMIT_FILE_READING, file.getParent() + "/*");
 
             String[] args = {"-dQUIET", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sDEVICE=nullpage"};
 

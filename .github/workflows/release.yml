@@ -55,17 +55,6 @@ jobs:
         run: ./gradlew build
 
       # -----------------------------------------------------------------------
-      # 6. Publish JAR + sources + javadoc to GitHub Packages
-      # -----------------------------------------------------------------------
-      - name: Publish to GitHub Packages
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          RELEASE_VERSION: ${{ steps.version.outputs.version }}
-        run: ./gradlew publishMavenJavaPublicationToGitHubPackagesRepository
-
-      # -----------------------------------------------------------------------
       # 7. Sign artifacts and publish to Maven Central via Sonatype Portal
       # -----------------------------------------------------------------------
       - name: Publish to Maven Central

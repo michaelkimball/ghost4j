@@ -705,8 +705,8 @@ public class Ghostscript {
      * <ul>
      *   <li>{@code /path/to/file} — permits exactly that file.
      *   <li>{@code /path/to/dir/*} — permits all files directly inside the directory (one level).
-     *   <li>{@code /path/to/dir/} — permits files in subdirectories but NOT direct children;
-     *       use {@code dir/*} instead.
+     *   <li>{@code /path/to/dir/} — permits files in subdirectories but NOT direct children; use
+     *       {@code dir/*} instead.
      *   <li>{@code /path/prefix*} — permits anything whose path starts with that prefix.
      * </ul>
      *
