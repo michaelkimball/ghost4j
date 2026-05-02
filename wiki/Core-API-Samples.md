@@ -40,6 +40,12 @@ ImageWriterDisplayCallback displayCallback = new ImageWriterDisplayCallback();
 Ghostscript gs = Ghostscript.getInstance();
 gs.setDisplayCallback(displayCallback);
 
+File inputFile = new File("input.ps").getAbsoluteFile();
+
+// Whitelist the input file's directory so -dSAFER allows post-init runFile().
+// Must be called before initialize().
+gs.addControlPath(Ghostscript.PERMIT_FILE_READING, inputFile.getParent() + "/*");
+
 String[] gsArgs = {
     "-dQUIET",
     "-dNOPAUSE",
@@ -53,7 +59,7 @@ String[] gsArgs = {
 try {
     synchronized (gs) {
         gs.initialize(gsArgs);
-        gs.runFile("input.ps");
+        gs.runFile(inputFile.getAbsolutePath());
         gs.exit();
     }
 } catch (GhostscriptException e) {

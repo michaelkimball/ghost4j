@@ -673,6 +673,58 @@ public class Ghostscript {
     }
 
     /**
+     * Permission type constant for {@link #addControlPath}: allow file reading under -dSAFER.
+     *
+     * @see GhostscriptLibrary#GS_PERMIT_FILE_READING
+     */
+    public static final int PERMIT_FILE_READING = GhostscriptLibrary.GS_PERMIT_FILE_READING;
+
+    /**
+     * Permission type constant for {@link #addControlPath}: allow file writing under -dSAFER.
+     *
+     * @see GhostscriptLibrary#GS_PERMIT_FILE_WRITING
+     */
+    public static final int PERMIT_FILE_WRITING = GhostscriptLibrary.GS_PERMIT_FILE_WRITING;
+
+    /**
+     * Permission type constant for {@link #addControlPath}: allow file control (stat/rename/delete)
+     * under -dSAFER.
+     *
+     * @see GhostscriptLibrary#GS_PERMIT_FILE_CONTROL
+     */
+    public static final int PERMIT_FILE_CONTROL = GhostscriptLibrary.GS_PERMIT_FILE_CONTROL;
+
+    /**
+     * Adds a path to the list of paths permitted for file access under -dSAFER. Must be called
+     * after the Ghostscript instance has been obtained (via {@link #getInstance()}) and before
+     * {@link #initialize(String[])}. Use {@link #PERMIT_FILE_READING}, {@link
+     * #PERMIT_FILE_WRITING}, or {@link #PERMIT_FILE_CONTROL} as the type.
+     *
+     * <p>GS path-control pattern matching rules:
+     *
+     * <ul>
+     *   <li>{@code /path/to/file} — permits exactly that file.
+     *   <li>{@code /path/to/dir/*} — permits all files directly inside the directory (one level).
+     *   <li>{@code /path/to/dir/} — permits files in subdirectories but NOT direct children;
+     *       use {@code dir/*} instead.
+     *   <li>{@code /path/prefix*} — permits anything whose path starts with that prefix.
+     * </ul>
+     *
+     * @param type Permission type (one of PERMIT_FILE_READING / WRITING / CONTROL).
+     * @param path File path or glob pattern to permit (case-sensitive).
+     * @throws org.ghost4j.GhostscriptException if the call fails.
+     */
+    public void addControlPath(int type, String path) throws GhostscriptException {
+        int result =
+                GhostscriptLibrary.instance.gsapi_add_control_path(
+                        getNativeInstanceByRef().getValue(), type, path);
+        if (result != 0) {
+            throw new GhostscriptException(
+                    "Cannot add control path on Ghostscript interpreter. Error code is " + result);
+        }
+    }
+
+    /**
      * Sends file Ghostscript interpreter. Must be called after initialize method.
      *
      * @param fileName File name

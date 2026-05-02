@@ -71,9 +71,20 @@ public abstract class AbstractComponent implements Component {
 
         Map<String, Object> result = PropertyUtils.describe(this);
 
-        if (result.get("maxProcessCount") != null) {
-            result.remove("maxProcessCount");
-        }
+        // Remove properties that are not JSON-serializable primitives.
+        // PropertyUtils.describe() always includes "class" (from Object.getClass()),
+        // supportedDocumentClasses (Class<?>[]), and any complex bean properties such as
+        // PaperSize.  The FrameCodec only handles String, Number, and Boolean values;
+        // non-primitive entries must be stripped here at the extraction boundary.
+        result.entrySet()
+                .removeIf(
+                        e ->
+                                e.getValue() == null
+                                        || !(e.getValue() instanceof String
+                                                || e.getValue() instanceof Number
+                                                || e.getValue() instanceof Boolean));
+
+        result.remove("maxProcessCount");
 
         return result;
     }

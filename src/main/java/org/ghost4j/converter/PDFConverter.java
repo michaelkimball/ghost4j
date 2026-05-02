@@ -83,14 +83,13 @@ public class PDFConverter extends AbstractRemoteConverter {
     }
 
     /**
-     * Main method used to start the converter in standalone 'slave mode'.
+     * Main method used to start this converter as a persistent worker child JVM.
      *
-     * @param args
-     * @throws ConverterException
+     * @param args unused; configuration is passed via system properties by {@code WorkerProcess}
+     * @throws Exception if {@code WorkerMain} fails to start
      */
-    public static void main(String args[]) throws ConverterException {
-
-        startRemoteConverter(new PDFConverter());
+    public static void main(String[] args) throws Exception {
+        org.ghost4j.worker.WorkerMain.main(args);
     }
 
     /**

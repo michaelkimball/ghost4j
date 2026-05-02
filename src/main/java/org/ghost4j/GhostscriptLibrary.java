@@ -30,6 +30,13 @@ public interface GhostscriptLibrary extends Library {
 
     final int GS_ARG_ENCODING_UTF8 = 1;
 
+    /** Path-control permission types for gsapi_add_control_path / gsapi_remove_control_path. */
+    final int GS_PERMIT_FILE_READING = 0;
+
+    final int GS_PERMIT_FILE_WRITING = 1;
+
+    final int GS_PERMIT_FILE_CONTROL = 2;
+
     /** Static instance of the library itself. */
     public static GhostscriptLibrary instance = GhostscriptLibraryLoader.loadLibrary();
 
@@ -447,4 +454,17 @@ public interface GhostscriptLibrary extends Library {
      * @return 0 if everything is OK, < 0 otherwise
      */
     public int gsapi_set_display_callback(Pointer instance, Structure callback);
+
+    /**
+     * Add a path to one of the lists of permitted paths for file access under -dSAFER. Must be
+     * called after gsapi_new_instance() and before gsapi_init_with_args(). The type selects which
+     * permission list to modify: GS_PERMIT_FILE_READING (0), GS_PERMIT_FILE_WRITING (1), or
+     * GS_PERMIT_FILE_CONTROL (2).
+     *
+     * @param instance Pointer to the Ghostscript instance.
+     * @param type Permission type (GS_PERMIT_FILE_READING / WRITING / CONTROL).
+     * @param path Path to permit (case-sensitive).
+     * @return 0 if everything is OK, < 0 otherwise
+     */
+    public int gsapi_add_control_path(Pointer instance, int type, String path);
 }

@@ -34,6 +34,10 @@ public class DisplayCallbackExample {
         // set display callback
         gs.setDisplayCallback(displayCallback);
 
+        // Resolve the input file and whitelist its directory so -dSAFER allows
+        // post-init runFile(). addControlPath() must be called before initialize().
+        File inputFile = new File("input.ps").getAbsoluteFile();
+
         // prepare Ghostscript interpreter parameters with display device
         String[] gsArgs = new String[7];
         gsArgs[0] = "-dQUIET";
@@ -47,8 +51,9 @@ public class DisplayCallbackExample {
         // run PostScript (also works with PDF) and exit interpreter
         try {
 
+            gs.addControlPath(Ghostscript.PERMIT_FILE_READING, inputFile.getParent() + "/*");
             gs.initialize(gsArgs);
-            gs.runFile("input.ps");
+            gs.runFile(inputFile.getAbsolutePath());
             gs.exit();
 
         } catch (GhostscriptException e) {

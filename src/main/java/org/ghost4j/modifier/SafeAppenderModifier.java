@@ -42,8 +42,14 @@ public class SafeAppenderModifier extends AbstractRemoteModifier {
      * @param args
      * @throws ModifierException
      */
-    public static void main(String args[]) throws ModifierException {
-        startRemoteModifier(new SafeAppenderModifier());
+    /**
+     * Main method used to start this modifier as a persistent worker child JVM.
+     *
+     * @param args unused; configuration is passed via system properties by {@code WorkerProcess}
+     * @throws Exception if {@code WorkerMain} fails to start
+     */
+    public static void main(String[] args) throws Exception {
+        org.ghost4j.worker.WorkerMain.main(args);
     }
 
     @Override

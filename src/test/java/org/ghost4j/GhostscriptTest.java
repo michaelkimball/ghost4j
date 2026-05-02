@@ -307,4 +307,43 @@ public class GhostscriptTest {
             fail(e.getMessage());
         }
     }
+
+    /**
+     * Test that runFile succeeds under -dSAFER when the file's directory is permitted via
+     * gsapi_add_control_path using a wildcard. GS path-control matching requires {@code dir/*}
+     * (not a bare directory path) to permit all files directly inside a directory; the path must
+     * be added before gsapi_init_with_args is called.
+     */
+    @Test
+    public void testRunFileWithSaferAndPermitFileAll() {
+
+        Ghostscript gs = Ghostscript.getInstance();
+
+        final ByteArrayOutputStream errOut = new ByteArrayOutputStream();
+
+        try {
+            File file = new File(testResourcesPath, "input.ps").getAbsoluteFile();
+
+            // Use "dir/*" to permit all files directly inside the directory.
+            // A bare directory path (with or without trailing slash) does not
+            // match direct children — only subdirectory paths. Must be called
+            // before initialize().
+            gs.addControlPath(
+                    Ghostscript.PERMIT_FILE_READING, file.getParent() + "/*");
+
+            String[] args = {"-dQUIET", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sDEVICE=nullpage"};
+
+            gs.setStdOut(new ByteArrayOutputStream());
+            gs.setStdErr(errOut);
+            gs.initialize(args);
+
+            gs.runFile(file.getAbsolutePath());
+
+            gs.exit();
+
+        } catch (GhostscriptException e) {
+            System.err.println("GS stderr: " + errOut.toString());
+            fail(e.getMessage());
+        }
+    }
 }

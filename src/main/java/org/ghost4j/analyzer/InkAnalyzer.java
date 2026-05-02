@@ -45,9 +45,14 @@ public class InkAnalyzer extends AbstractRemoteAnalyzer implements Analyzer {
      * @param args
      * @throws AnalyzerException
      */
-    public static void main(String args[]) throws AnalyzerException {
-
-        startRemoteAnalyzer(new InkAnalyzer());
+    /**
+     * Main method used to start this analyzer as a persistent worker child JVM.
+     *
+     * @param args unused; configuration is passed via system properties by {@code WorkerProcess}
+     * @throws Exception if {@code WorkerMain} fails to start
+     */
+    public static void main(String[] args) throws Exception {
+        org.ghost4j.worker.WorkerMain.main(args);
     }
 
     /**

@@ -286,20 +286,37 @@ Source path: `psi/imainarg.c` → `gs_main_init_with_args2()` returns `gs_error_
 
 ### GS 9.50 SAFER mode blocks `gsapi_run_file` on user files
 
-**`-dSAFER` is ON by default in GS 9.50+.** When `gsapi_run_file` is called after `gsapi_init_with_args` has returned, GS SAFER mode blocks reading of user files even though the implementation calls `gs_add_control_path` internally. The result is "Permission denied" from the OS → execute0 catches the PS error → `1 .quit` → `gsapi_run_file` returns `-100` with `pexit_code=1`.
+**`-dSAFER` is ON by default in GS 9.50+.** When `gsapi_run_file` is called after `gsapi_init_with_args` has returned, GS SAFER mode blocks reading of user files. The result is "Permission denied" from the OS → execute0 catches the PS error → `1 .quit` → `gsapi_run_file` returns `-100` with `pexit_code=1`.
 
 The error chain: `gsapi_run_file` → `gs_main_run_file2` → `.runfile` PS operator → `execute0` → `1 .quit` → `-100`/`pexit_code=1`.
 
-**Workaround**: Use `-dNOSAFER` when you need `gsapi_run_file` to read files after init:
+Note: passing the file inside `gsapi_init_with_args` (via `-f input.ps`) works fine even with SAFER enabled — the restriction applies specifically to **post-init** `gsapi_run_file` calls.
+
+**Option 1 — keep SAFER, whitelist specific paths (preferred):** call `Ghostscript.addControlPath()` before `initialize()`.
+
+GS path-control pattern matching rules (from `gpmisc.c` `validate()`):
+- `/path/to/file` — permits exactly that file.
+- `/path/to/dir/*` — permits all files directly inside the directory (one level). **Use this for directory access.**
+- `/path/to/dir/` — permits files in *sub*directories but NOT direct children. Counterintuitive — prefer `dir/*`.
+- `/path/prefix*` — permits anything whose path starts with that prefix.
 
 ```java
-// testRunFile, testDisplayCallback, FontAnalyzer, any post-init file run:
-String[] args = { "-dQUIET", "-dNOPAUSE", "-dBATCH", "-dNOSAFER", "-sDEVICE=nullpage" };
-gs.initialize(args);   // Ghostscript.initialize() prepends "gs"
-gs.runFile("/abs/path/to/file.ps");
+File file = new File("/abs/path/to/file.ps");
+// Permit all files in the same directory (call BEFORE initialize):
+gs.addControlPath(Ghostscript.PERMIT_FILE_READING, file.getParent() + "/*");
+
+String[] args = { "-dQUIET", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sDEVICE=nullpage" };
+gs.initialize(args);
+gs.runFile(file.getAbsolutePath());
 ```
 
-Note: `gs -dSAFER -sDEVICE=nullpage input.ps` (CLI or via init args directly) works fine — SAFER handles file access during `init_with_args` processing. The restriction applies specifically to **post-init** `gsapi_run_file` calls.
+**Option 2 — disable SAFER entirely (quick but unsandboxed):** use `-dNOSAFER`:
+
+```java
+String[] args = { "-dQUIET", "-dNOPAUSE", "-dBATCH", "-dNOSAFER", "-sDEVICE=nullpage" };
+gs.initialize(args);
+gs.runFile("/abs/path/to/file.ps");
+```
 
 ### JNA 5.x: callbacks must be held in strong (static) references
 
@@ -355,7 +372,7 @@ if (result <= -100) {
 4. **`argv[0]` is the program name and is skipped** — always use `"gs"` as `argv[0]` for direct calls; `Ghostscript.initialize()` adds it automatically.
 5. **`gsapi_init_with_args` returning `-101` is NOT fatal** — `-dBATCH` causes this; the interpreter is alive and ready for `run_file`/`run_string`. Do not call `gsapi_exit()`.
 6. **Always call `gsapi_exit()` before `gsapi_delete_instance()`** if `init_with_args` was called (including after fatal errors `<= -100`).
-7. **SAFER mode (`-dSAFER`, default ON in GS 9.50+) blocks post-init `gsapi_run_file`** — use `-dNOSAFER` when calling `gsapi_run_file` after init.
+7. **SAFER mode (`-dSAFER`, default ON in GS 9.50+) blocks post-init `gsapi_run_file`** — use `addControlPath(PERMIT_FILE_READING, dir + "/*")` before init, or `-dNOSAFER` to disable the sandbox entirely.
 8. **JNA 5.x callbacks need static references** — local callback objects get GC'd; store them in static fields.
 9. **Capture stdout/stderr before `initialize()`** — prevent GS banner from corrupting Surefire or other stdout consumers.
 10. **`gsapi_set_param` triggers `initgraphics`** — only safe at page start.

@@ -109,7 +109,22 @@ These are real issues discovered while building and testing Ghost4J on Ghostscri
 
 This affects `Ghostscript.runFile()` and any component (FontAnalyzer, SimpleRenderer, etc.) that feeds files to GS after initialization.
 
-**Fix**: include `-dNOSAFER` in the args passed to `gs.initialize()` when you intend to call `gs.runFile()` afterward:
+Note: passing the file directly inside `gs.initialize()` (via `-f input.ps` in the args array) works fine even with SAFER enabled — the restriction applies only to **post-init** `runFile()` calls.
+
+**Option 2 — keep SAFER, whitelist specific paths (preferred):** call `addControlPath()` before `initialize()`. Use `dir/*` to permit all files directly inside a directory:
+
+```java
+File file = new File("input.ps").getAbsoluteFile();
+gs.addControlPath(Ghostscript.PERMIT_FILE_READING, file.getParent() + "/*");
+
+gs.initialize(new String[]{
+    "-dQUIET", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sDEVICE=pdfwrite",
+    "-sOutputFile=out.pdf"
+});
+gs.runFile(file.getAbsolutePath());
+```
+
+**Option 1 — disable SAFER entirely (quick, unsandboxed):** include `-dNOSAFER` in the `initialize()` args:
 
 ```java
 gs.initialize(new String[]{
@@ -118,8 +133,6 @@ gs.initialize(new String[]{
 });
 gs.runFile("input.ps");
 ```
-
-Note: passing an input file directly inside `gs.initialize()` (via `-f input.ps` as part of the args array) works fine even with SAFER enabled — the restriction applies only to **post-init** `runFile()` calls.
 
 ### Headless Linux / WSL: always specify a device
 

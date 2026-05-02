@@ -18,6 +18,7 @@ itext-layout = { group = "com.itextpdf", name = "layout", version.ref = "itext" 
 itext-io = { group = "com.itextpdf", name = "io", version.ref = "itext" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit-jupiter" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-jupiter" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
 [plugins]
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.github.michaelkimball"
-version = "1.1.0"
+version = "1.2.0"
 description = "Java wrapper for Ghostscript API."
 
 java {
@@ -31,6 +31,7 @@ dependencies {
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.slf4j.simple)
 }
 
 tasks.test {

@@ -1,13 +1,13 @@
 # Ghost4J — Copilot Agent Instructions
 
 ## Repository Summary
-Ghost4J is a Java library that binds the Ghostscript C API to Java via JNA (Java Native Access). It provides both a low-level JNA bridge to the Ghostscript interpreter and a high-level object-oriented API for working with PDF and PostScript documents (conversion, rendering, analysis, modification). The library supports running components in a separate JVM process (remote mode) for thread safety, using GNU Cajo for inter-process RPC.
+Ghost4J is a Java library that binds the Ghostscript C API to Java via JNA (Java Native Access). It provides both a low-level JNA bridge to the Ghostscript interpreter and a high-level object-oriented API for working with PDF and PostScript documents (conversion, rendering, analysis, modification). The library supports running components in a persistent separate JVM process (remote mode) for thread safety, using a UDS worker pool for inter-process communication.
 
 **Type**: Java library (JAR)
 **Group / Artifact**: `io.github.michaelkimball:ghost4j`
-**Version**: 1.1.0
+**Version**: 1.2.0
 **License**: LGPL
-**Source files**: ~65 main + 13 test Java files
+**Source files**: ~75 main + 11 test Java files
 **No GitHub Actions CI workflows exist** in this repository.
 
 ---
@@ -38,7 +38,7 @@ Always run from the repository root using the Gradle wrapper.
 ./gradlew compileJava compileTestJava   # validate compile without running tests
 ```
 
-**Produced artifact**: `build/libs/ghost4j-1.1.0.jar`
+**Produced artifact**: `build/libs/ghost4j-1.2.0.jar`
 
 ---
 
@@ -59,14 +59,14 @@ ghost4j/
 │   ├── libs.versions.toml           # Version catalog
 │   └── wrapper/                     # Gradle wrapper scripts
 ├── docs/
-│   └── GHOSTSCRIPT.md               # Internal reference — GS C API gotchas, must read before touching GS code
+│   ├── GHOSTSCRIPT.md               # Internal reference — GS C API gotchas, must read before touching GS code
+│   └── UDS-WORKER-POOL-DESIGN.md    # Architecture reference for the UDS worker pool
 ├── wiki/                            # GitHub wiki source (mirrored to github.com/michaelkimball/ghost4j.wiki.git)
 ├── README.md
 ├── LICENSE
 └── src/
     ├── main/
     │   └── java/
-    │       ├── gnu/cajo/            # Bundled GNU Cajo RPC library (remote component support)
     │       └── org/ghost4j/
     │           ├── Ghostscript.java           # Singleton Ghostscript interpreter wrapper
     │           ├── GhostscriptLibrary.java    # JNA interface bridging Ghostscript C API
@@ -83,7 +83,9 @@ ghost4j/
     │           ├── example/                   # Standalone usage examples
     │           ├── modifier/                  # SafeAppenderModifier
     │           ├── renderer/                  # SimpleRenderer
-    │           └── util/                      # JavaFork, DiskStore, NetworkUtil, etc.
+    │           ├── util/                      # DiskStore, ImageUtil, etc.
+    │           └── worker/                    # UDS worker pool (WorkerPool, WorkerProcess, WorkerMain, …)
+    │               └── protocol/              # Binary frame protocol (Frame, FrameCodec, …)
     └── test/
         ├── java/org/ghost4j/        # JUnit Jupiter tests
         └── resources/               # input.ps, input.pdf, input-2pages.pdf, input-2pages.ps
@@ -94,7 +96,7 @@ ghost4j/
 ## Key Architecture Facts
 
 - **`Ghostscript`** (`org.ghost4j.Ghostscript`) is a **thread-unsafe singleton**. Only one Ghostscript instance can exist per JVM. Call `Ghostscript.deleteInstance()` in `@AfterEach`.
-- **Remote mode**: Components like `PDFConverter`, `SimpleRenderer`, `SafeAppenderModifier` extend `AbstractRemoteComponent`. When `maxProcessCount > 0` is set, they fork a child JVM via `JavaFork` and communicate over GNU Cajo (RMI-style).
+- **Remote mode**: Components like `PDFConverter`, `SimpleRenderer`, `SafeAppenderModifier` extend `AbstractRemoteComponent`. When `maxProcessCount > 0` is set, they acquire a worker from a `WorkerPool`, send a `RequestFrame` over a Unix Domain Socket, and receive a `ResponseOkFrame` or `ResponseErrFrame`. Workers are persistent child JVMs launched by `WorkerProcess` via `ProcessBuilder`; `WorkerMain` is the entry point in each child JVM. GNU Cajo has been removed. See `docs/UDS-WORKER-POOL-DESIGN.md` for the full architecture.
 - **JNA bridge**: `GhostscriptLibrary` is a JNA `Library` interface. On Linux it loads `libgs.so`; on Windows it loads `gsdll32.dll` or `gsdll64.dll` based on arch.
 - **Document classes**: `PSDocument` and `PDFDocument` both implement `Document` and hold raw byte content. Pass them to converters/renderers/analyzers.
 - **Tests**: JUnit 5 Jupiter style (`@BeforeEach`, `@AfterEach`, `@Test`). Test resources loaded via `getClass().getClassLoader().getResourceAsStream("input.ps")`.
@@ -123,16 +125,22 @@ ghost4j/
 
 ```java
 // CORRECT — initialize() adds "gs" as argv[0] automatically
-gs.initialize(new String[]{"-dQUIET", "-dNOPAUSE", "-dBATCH", "-dNOSAFER"});
+gs.initialize(new String[]{"-dQUIET", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sDEVICE=nullpage"});
 
 // WRONG — if "gs" prefix were removed, "-dQUIET" would be argv[0] (skipped); banner prints
 ```
 
 ### `-dSAFER` (default ON in GS 9.50+) blocks `gsapi_run_file` called after init
-Passing a file inside `initialize()` args works fine. Calling `gs.runFile(...)` **after** `initialize()` returns fails with error `-100` unless `-dNOSAFER` is in the init args.
+Passing a file inside `initialize()` args works fine. Calling `gs.runFile(...)` **after** `initialize()` returns fails with error `-100` unless SAFER is disabled or the path is whitelisted.
 
 ```java
-// CORRECT for post-init runFile:
+// Preferred — keep SAFER, whitelist the directory (call BEFORE initialize):
+// Pattern rules: "dir/*" permits direct children; "dir/" does NOT; exact path also works.
+gs.addControlPath(Ghostscript.PERMIT_FILE_READING, file.getParent() + "/*");
+gs.initialize(new String[]{"-dQUIET", "-dNOPAUSE", "-dBATCH", "-dSAFER", "-sDEVICE=pdfwrite", ...});
+gs.runFile(file.getAbsolutePath());
+
+// Alternative — disable SAFER entirely (unsandboxed):
 gs.initialize(new String[]{"-dQUIET", "-dNOPAUSE", "-dBATCH", "-dNOSAFER", "-sDEVICE=pdfwrite", ...});
 gs.runFile("input.ps");
 ```
@@ -184,8 +192,8 @@ Test resources live in `src/test/resources/` and are loaded via the classloader.
 Before considering a change complete:
 1. `./gradlew spotlessApply` — format all sources.
 2. `./gradlew compileJava compileTestJava` — both compile cleanly.
-3. `./gradlew test` — all tests pass (57 tests as of May 2026). Requires Ghostscript installed.
+3. `./gradlew test` — all tests pass (74 tests as of May 2026). Requires Ghostscript installed.
 4. New component types follow the `Component → AbstractComponent → AbstractRemoteComponent → ConcreteClass` hierarchy.
-5. New converters/renderers/modifiers must implement `run()` and a static `main()` that calls the appropriate `startRemote*()` method.
+5. New converters/renderers/modifiers must implement `run()` and a static `main()` that delegates to `org.ghost4j.worker.WorkerMain.main(args)`.
 
 Trust these instructions. Only search the codebase if the above information is incomplete or appears incorrect for the specific change being made.

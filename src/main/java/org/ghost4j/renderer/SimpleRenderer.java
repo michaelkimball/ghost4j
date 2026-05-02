@@ -47,9 +47,14 @@ public class SimpleRenderer extends AbstractRemoteRenderer {
      * @param args
      * @throws RendererException
      */
-    public static void main(String[] args) throws RendererException {
-
-        startRemoteRenderer(new SimpleRenderer());
+    /**
+     * Main method used to start this renderer as a persistent worker child JVM.
+     *
+     * @param args unused; configuration is passed via system properties by {@code WorkerProcess}
+     * @throws Exception if {@code WorkerMain} fails to start
+     */
+    public static void main(String[] args) throws Exception {
+        org.ghost4j.worker.WorkerMain.main(args);
     }
 
     @Override

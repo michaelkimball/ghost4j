@@ -6,18 +6,24 @@
  */
 package org.ghost4j.converter;
 
-import gnu.cajo.invoke.Remote;
-import gnu.cajo.utils.ItemServer;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 import org.ghost4j.AbstractRemoteComponent;
 import org.ghost4j.document.Document;
 import org.ghost4j.document.DocumentException;
-import org.ghost4j.util.JavaFork;
+import org.ghost4j.document.PDFDocument;
+import org.ghost4j.worker.WorkerCrashedException;
+import org.ghost4j.worker.WorkerPool;
+import org.ghost4j.worker.WorkerProcess;
+import org.ghost4j.worker.protocol.Frame;
+import org.ghost4j.worker.protocol.RequestFrame;
+import org.ghost4j.worker.protocol.ResponseErrFrame;
+import org.ghost4j.worker.protocol.ResponseOkFrame;
+import org.slf4j.MDC;
 
 /**
- * Abstract remote converter implementation. Used as base class for remote converters.
+ * Abstract remote converter. Replaces Cajo/JavaFork dispatch with UDS worker-pool dispatch.
  *
  * @author Gilles Grousset (gi.grousset@gmail.com)
  */
@@ -27,104 +33,73 @@ public abstract class AbstractRemoteConverter extends AbstractRemoteComponent
     protected abstract void run(Document document, OutputStream outputStream)
             throws IOException, ConverterException, DocumentException;
 
-    /**
-     * Starts a remote converter server.
-     *
-     * @param remoteConverter
-     * @throws ConverterException
-     */
-    protected static void startRemoteConverter(RemoteConverter remoteConverter)
-            throws ConverterException {
-
-        try {
-
-            // get port
-            if (System.getenv("cajo.port") == null) {
-                throw new ConverterException("No Cajo port defined for remote converter");
-            }
-            int cajoPort = Integer.parseInt(System.getenv("cajo.port"));
-
-            // export converter
-            RemoteConverter converterCopy = remoteConverter.getClass().newInstance();
-            converterCopy.setMaxProcessCount(0);
-
-            Remote.config(null, cajoPort, null, 0);
-            ItemServer.bind(converterCopy, RemoteConverter.class.getCanonicalName());
-
-        } catch (Exception e) {
-            throw new ConverterException(e);
-        }
-    }
-
-    public byte[] remoteConvert(Document document)
-            throws IOException, ConverterException, DocumentException {
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        run(document, baos);
-
-        byte[] result = baos.toByteArray();
-        baos.close();
-
-        return result;
-    }
-
     public void convert(Document document, OutputStream outputStream)
             throws IOException, ConverterException, DocumentException {
 
         if (maxProcessCount == 0) {
-
-            // perform actual processing
             run(document, outputStream);
+            return;
+        }
 
-        } else {
+        WorkerPool pool = getOrCreatePool(maxProcessCount);
+        WorkerProcess worker = pool.acquire();
+        int opId = operationCounter.getAndIncrement();
 
-            // handle parallel processes
+        MDC.put("ghost4j.operationId", Integer.toHexString(opId));
+        MDC.put("ghost4j.component", this.getClass().getSimpleName());
+        MDC.put("ghost4j.workerId", worker.id().toString());
 
-            // wait for a process to get free
-            this.waitForFreeProcess();
-            processCount++;
+        try {
+            byte docType =
+                    (document instanceof PDFDocument) ? RequestFrame.DOC_PDF : RequestFrame.DOC_PS;
 
-            // check if current class supports stand alone mode
-            if (!this.isStandAloneModeSupported()) {
-                throw new ConverterException(
-                        "Standalone mode is not supported by this converter: no 'main' method found");
-            }
-
-            // prepare new JVM
-            JavaFork fork = this.buildJavaFork();
-
-            // set JVM Xmx parameter according to the document size
-            int documentMbSize = (document.getSize() / 1024 / 1024) + 1;
-            int xmxValue = 64 + documentMbSize;
-            fork.setXmx(xmxValue + "m");
-
-            int cajoPort = 0;
-
+            Map<String, Object> settings;
             try {
-
-                // start remove server
-                cajoPort = this.startRemoteServer(fork);
-
-                // get remote component
-                Object remote = this.getRemoteComponent(cajoPort, RemoteConverter.class);
-
-                // copy converter settings to remote converter
-                Remote.invoke(remote, "copySettings", this.extractSettings());
-
-                // perform remote conversion
-                byte[] result = (byte[]) Remote.invoke(remote, "remoteConvert", document);
-
-                // write result to output stream
-                outputStream.write(result);
-
-            } catch (IOException e) {
-                throw e;
+                settings = extractSettings();
             } catch (Exception e) {
-                throw new ConverterException(e);
-            } finally {
-                processCount--;
-                fork.stop();
+                throw new ConverterException("Failed to extract component settings", e);
             }
+
+            long t0 = System.nanoTime();
+            RequestFrame req = new RequestFrame(opId, docType, settings, document.getContent());
+
+            Frame response;
+            try {
+                worker.send(req);
+                response = worker.receive();
+            } catch (IOException e) {
+                if (worker.crashed().compareAndSet(false, true)) {
+                    pool.replaceWorker(worker);
+                }
+                throw new WorkerCrashedException("Worker crashed during conversion", e);
+            }
+
+            long elapsedMs = (System.nanoTime() - t0) / 1_000_000;
+            log.debug(
+                    "op={} component={} docBytes={} durationMs={}",
+                    Integer.toHexString(opId),
+                    this.getClass().getSimpleName(),
+                    document.getContent().length,
+                    elapsedMs);
+            if (elapsedMs > 30_000L) {
+                log.warn(
+                        "Slow GS request: op={} durationMs={}",
+                        Integer.toHexString(opId),
+                        elapsedMs);
+            }
+
+            if (response instanceof ResponseOkFrame ok) {
+                worker.requestsHandled().incrementAndGet();
+                outputStream.write(ok.result());
+            } else if (response instanceof ResponseErrFrame err) {
+                throw new ConverterException(err.errorClass() + ": " + err.errorMessage());
+            }
+
+        } finally {
+            pool.release(worker);
+            MDC.remove("ghost4j.operationId");
+            MDC.remove("ghost4j.component");
+            MDC.remove("ghost4j.workerId");
         }
     }
 }
