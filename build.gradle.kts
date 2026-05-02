@@ -2,11 +2,17 @@ plugins {
     java
     `java-library`
     `maven-publish`
+    signing
     alias(libs.plugins.spotless)
+    alias(libs.plugins.nmcp)
+    alias(libs.plugins.nmcp.aggregation)
 }
 
 group = "io.github.michaelkimball"
-version = "1.2.0"
+// Version is set from the git tag in CI (e.g. refs/tags/v1.2.3 → 1.2.3).
+// Falls back to "1.2.0-SNAPSHOT" for local development.
+version = System.getenv("RELEASE_VERSION") ?: "1.2.0-SNAPSHOT"
+val githubRepo = System.getenv("GITHUB_REPOSITORY") ?: "michaelkimball/ghost4j"
 description = "Java wrapper for Ghostscript API."
 
 java {
@@ -58,7 +64,7 @@ publishing {
             pom {
                 name.set("Ghost4J")
                 description.set(project.description)
-                url.set("https://github.com/michaelkimball/ghost4j")
+                url.set("https://github.com/$githubRepo")
                 licenses {
                     license {
                         name.set("GNU LESSER GENERAL PUBLIC LICENSE")
@@ -101,7 +107,43 @@ publishing {
                         email.set("osoriojaques@gmail.com")
                     }
                 }
+                scm {
+                    connection.set("scm:git:git://github.com/$githubRepo.git")
+                    developerConnection.set("scm:git:ssh://github.com/$githubRepo.git")
+                    url.set("https://github.com/$githubRepo")
+                }
             }
         }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/${System.getenv("GITHUB_REPOSITORY") ?: githubRepo}")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+
+nmcpAggregation {
+    centralPortal {
+        username = System.getenv("SONATYPE_USERNAME") ?: ""
+        password = System.getenv("SONATYPE_PASSWORD") ?: ""
+        publishingType = "AUTOMATIC"
+    }
+}
+
+dependencies {
+    nmcpAggregation(project(":"))
+}
+
+signing {
+    val signingKey = System.getenv("GPG_PRIVATE_KEY")
+    val signingPasswd = System.getenv("GPG_PASSPHRASE")
+    if (signingKey != null) {
+        useInMemoryPgpKeys(signingKey, signingPasswd)
+        sign(publishing.publications["mavenJava"])
     }
 }

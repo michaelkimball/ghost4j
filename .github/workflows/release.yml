@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # triggers on tags like v1.2.0, v1.3.0, etc.
+
+permissions:
+  contents: write       # needed to create GitHub releases and upload assets
+  packages: write       # needed to publish to GitHub Packages
+
+jobs:
+  release:
+    name: Build, publish & release
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # 2. Install Ghostscript (required for tests)
+      # -----------------------------------------------------------------------
+      - name: Install Ghostscript
+        run: sudo apt-get update && sudo apt-get install -y ghostscript
+
+      # -----------------------------------------------------------------------
+      # 3. Set up Java 17 (matches source/target compatibility in build.gradle.kts)
+      # -----------------------------------------------------------------------
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      # -----------------------------------------------------------------------
+      # 4. Derive version from the git tag  (v1.2.0 → 1.2.0)
+      # -----------------------------------------------------------------------
+      - name: Derive release version
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # 5. Build and test
+      # -----------------------------------------------------------------------
+      - name: Build and test
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./gradlew build
+
+      # -----------------------------------------------------------------------
+      # 6. Publish JAR + sources + javadoc to GitHub Packages
+      # -----------------------------------------------------------------------
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: ./gradlew publishMavenJavaPublicationToGitHubPackagesRepository
+
+      # -----------------------------------------------------------------------
+      # 7. Sign artifacts and publish to Maven Central via Sonatype Portal
+      # -----------------------------------------------------------------------
+      - name: Publish to Maven Central
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: ./gradlew publishAggregationToCentralPortal
+
+      # -----------------------------------------------------------------------
+      # 8. Collect artifact paths for the release upload
+      # -----------------------------------------------------------------------
+      - name: Locate artifacts
+        id: artifacts
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          LIBS=build/libs
+          echo "jar=$LIBS/ghost4j-${RELEASE_VERSION}.jar"                >> "$GITHUB_OUTPUT"
+          echo "sources=$LIBS/ghost4j-${RELEASE_VERSION}-sources.jar"    >> "$GITHUB_OUTPUT"
+          echo "javadoc=$LIBS/ghost4j-${RELEASE_VERSION}-javadoc.jar"    >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # 9. Create GitHub Release and upload artifacts
+      # -----------------------------------------------------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Ghost4J v${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.artifacts.outputs.jar }}
+            ${{ steps.artifacts.outputs.sources }}
+            ${{ steps.artifacts.outputs.javadoc }}
