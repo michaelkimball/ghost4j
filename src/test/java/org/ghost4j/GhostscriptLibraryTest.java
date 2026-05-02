@@ -23,8 +23,6 @@ import org.junit.jupiter.api.Test;
  */
 public class GhostscriptLibraryTest {
 
-    private final String testResourcesPath = "target/test-classes";
-
     private GhostscriptLibrary ghostscriptLibrary;
 
     // Static fields to prevent JNA 5.x WeakHashMap GC from collecting callbacks
@@ -120,7 +118,7 @@ public class GhostscriptLibraryTest {
         ghostscriptLibrary.gsapi_new_instance(instanceByRef.getPointer(), null);
 
         // call interpreter for PS to PDF conversion
-        File file = new File(testResourcesPath, "input.ps");
+        File file = TestResources.get("input.ps");
         File outputFile = new File("output.pdf");
 
         // 'ps2pdf' is argv[0] (program name, skipped by GS)
@@ -265,7 +263,7 @@ public class GhostscriptLibraryTest {
 
         // run command — use absolute path so file resolution is unambiguous
         IntByReference exitCode = new IntByReference();
-        File file = new File(testResourcesPath, "input.ps").getAbsoluteFile();
+        File file = TestResources.get("input.ps");
         ghostscriptLibrary.gsapi_run_file(
                 instanceByRef.getValue(), file.getAbsolutePath(), 0, exitCode);
         // test result

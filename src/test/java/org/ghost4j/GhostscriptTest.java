@@ -26,8 +26,6 @@ import org.junit.jupiter.api.Test;
  */
 public class GhostscriptTest {
 
-    private final String testResourcesPath = "target/test-classes";
-
     @BeforeEach
     protected void setUp() throws Exception {}
 
@@ -137,7 +135,7 @@ public class GhostscriptTest {
 
         // run file
         try {
-            File file = new File(testResourcesPath, "input.ps").getAbsoluteFile();
+            File file = TestResources.get("input.ps");
             gs.runFile(file.getAbsolutePath());
         } catch (GhostscriptException e) {
             // print stderr to surefire report so we can see the PS error
@@ -163,7 +161,7 @@ public class GhostscriptTest {
 
         // initialize
         try {
-            File file = new File(testResourcesPath, "input.ps");
+            File file = TestResources.get("input.ps");
             is = new FileInputStream(file);
 
             gs.setStdIn(is);
@@ -296,7 +294,7 @@ public class GhostscriptTest {
 
             gs.initialize(args);
 
-            File file = new File(testResourcesPath, "input.ps").getAbsoluteFile();
+            File file = TestResources.get("input.ps");
             gs.runFile(file.getAbsolutePath());
 
             gs.exit();
@@ -322,7 +320,7 @@ public class GhostscriptTest {
         final ByteArrayOutputStream errOut = new ByteArrayOutputStream();
 
         try {
-            File file = new File(testResourcesPath, "input.ps").getAbsoluteFile();
+            File file = TestResources.get("input.ps");
 
             // Use "dir/*" to permit all files directly inside the directory.
             // A bare directory path (with or without trailing slash) does not
