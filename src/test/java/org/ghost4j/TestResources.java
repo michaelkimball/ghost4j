@@ -32,7 +32,8 @@ public final class TestResources {
         URL url = TestResources.class.getClassLoader().getResource(name);
         if (url == null) {
             throw new IllegalArgumentException(
-                    "Test resource not found on classpath: " + name
+                    "Test resource not found on classpath: "
+                            + name
                             + " — ensure the file exists in src/test/resources/");
         }
         try {
