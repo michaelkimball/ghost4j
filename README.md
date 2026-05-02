@@ -1,50 +1,24 @@
-<p align="center">
-<img src="http://www.ghost4j.org/images/home-logo.png"/>
-</p>
-
+# Ghost4j - Unofficial Ghostscript Java bindings
 
 Ghost4J binds the Ghostscript C API to bring Ghostscript power to the Java world.
 It also provides a high-level API to handle PDF and Postscript documents with objects.
 
+### Gradle configuration
+
+```kotlin
+dependencies {
+    implementation("io.github.michaelkimball:ghost4j:1.2.0")
+}
+```
+
 ### Maven configuration
 
 ```xml
-<dependencies>
-
-	...
-
-	<dependency>
-		<groupId>org.ghost4j</groupId>
-		<artifactId>ghost4j</artifactId>
-		<version>1.0.1</version>
-	</dependency>
-	
-	...
-	
-</dependencies>
-```
-
-If you want to use an older release (before 1.0.0), add the following repositories as well:
-
-```xml
-<repositories>
-
-	...
-	
-	<repository>
-		<id>org.ghost4j.repository.releases</id>
-		<name>Ghost4J releases</name>
-		<url>http://repo.ghost4j.org/maven2/releases</url>
-	</repository>
-	<repository>
-		<id>org.ghost4j.repository.snapshots</id>
-		<name>Ghost4J snapshots</name>
-		<url>http://repo.ghost4j.org/maven2/snapshots</url>
-	</repository>
-	
-	...
-
-</repositories>
+<dependency>
+    <groupId>io.github.michaelkimball</groupId>
+    <artifactId>ghost4j</artifactId>
+    <version>1.2.0</version>
+</dependency>
 ```
 
 ### A simple example (PS to PDF conversion)
@@ -64,11 +38,7 @@ If you want to use an older release (before 1.0.0), add the following repositori
 	
 	//convert
 	converter.convert(document, fos);
-	
-### Getting binaries
-
-Binary distributions can be downloaded from [here](http://www.ghost4j.org/downloads.html)
 
 ### Documentation
 
-Documentation is available from [http://www.ghost4j.org](http://www.ghost4j.org)
+Documentation is available on the [GitHub wiki](https://github.com/michaelkimball/ghost4j/wiki)
